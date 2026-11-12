@@ -24,6 +24,11 @@ export interface ProjectDetail {
   project: Project;
   stages: StageInfo[];
   active_run: { id: string; stage_key: string } | null;
+  kind?: ProjectKind;
+  /** A landing page whose short brief isn't filled in yet. */
+  brief_needed?: boolean;
+  /** Stages a landing page's brief stood in for. */
+  handled_by_brief?: string[];
 }
 
 export interface Message {
@@ -797,6 +802,11 @@ export interface BuildSetup {
   landing_style: LandingStyle;
   /** UI Design was skipped: only a landing page can be built. */
   design_skipped?: boolean;
+  /** The owner chose the setup when creating the project. */
+  chosen_at_start?: boolean;
+  /** Gagesite's recommendation for this plan, and why. */
+  recommended?: BuildSetup["setup"];
+  recommended_why?: string;
   /** The landing page's hero video, once uploaded or made. */
   landing_video?: { file: string; size: number } | null;
   /** The phone (9:16) version, when there is one. */
@@ -827,6 +837,29 @@ export type BuildSetupChoice = Pick<
 >;
 
 export type LandingStyle = "modern" | "3d" | "video";
+
+/** What a project is: a full website (five stages) or one landing page (a brief, then the build). */
+export type ProjectKind = "website" | "landing";
+/** A website's build setup chosen at the start ("unsure": recommended after the plan). */
+export type StartSetup = "unsure" | "all_in_one" | "api_service" | "static_external";
+
+/** A landing page's short brief, in place of Plan, Database and UI Design. */
+export interface LandingBriefInput {
+  business_name: string;
+  offer: string;
+  industry?: string;
+  main_action: string;
+  main_action_link?: string;
+  facts?: string;
+  contact?: string;
+  location?: string;
+  languages?: string[];
+  link?: string;
+  showpiece: LandingStyle;
+  colors?: string[];
+  style_note?: string;
+  prompt?: string;
+}
 
 /** One section of a landing page's scroll storyboard. */
 export interface StoryboardSection {
@@ -1022,7 +1055,17 @@ export interface DeployArtifact {
 
 export const api = {
   listProjects: () => request<Project[]>("/api/projects"),
-  createProject: (name: string) => request<Project>("/api/projects", { method: "POST", body: JSON.stringify({ name }) }),
+  createProject: (name: string, kind: ProjectKind = "website", setup: StartSetup = "unsure") =>
+    request<Project>("/api/projects", { method: "POST", body: JSON.stringify({ name, kind, setup }) }),
+  getLandingBrief: (id: string) =>
+    request<{ brief: (LandingBriefInput & { languages: string[] }) | null; locked: boolean }>(
+      `/api/projects/${id}/landing-brief`,
+    ),
+  submitLandingBrief: (id: string, brief: LandingBriefInput) =>
+    request<{ ok: boolean; next: string }>(`/api/projects/${id}/landing-brief`, {
+      method: "POST",
+      body: JSON.stringify(brief),
+    }),
   deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
   getProject: (id: string) => request<ProjectDetail>(`/api/projects/${id}`),
   getMessages: (id: string, stage: string) => request<Message[]>(`/api/projects/${id}/stages/${stage}/messages`),

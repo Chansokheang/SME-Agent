@@ -8,6 +8,7 @@ import BuildStage from "@/components/build/BuildStage";
 import DatabaseStage from "@/components/database/DatabaseStage";
 import DeployStage from "@/components/deploy/DeployStage";
 import DesignStage from "@/components/design/DesignStage";
+import LandingBrief from "@/components/LandingBrief";
 import PlaceholderStage from "@/components/PlaceholderStage";
 import ScopeStage from "@/components/ScopeStage";
 import StageSidebar, { MobileStageBar } from "@/components/StageSidebar";
@@ -62,16 +63,27 @@ export default function StagePage() {
       }
     : undefined;
 
+  // A landing page has three steps: its brief (in place of Plan, Database and UI Design),
+  // Implementation and Deployment. The brief's step opens the first stage, where the brief lives.
+  const landing = detail.kind === "landing";
+  const navStages = landing
+    ? [
+        {
+          ...detail.stages[0],
+          title: "Landing page brief",
+          description: "What the page is about, its main action and key facts.",
+          status: detail.brief_needed ? ("active" as const) : ("approved" as const),
+        },
+        ...detail.stages.filter((s) => s.key === "04-build" || s.key === "05-deploy"),
+      ].map((s, i) => ({ ...s, order: i + 1 }))
+    : detail.stages;
+  const navKey = landing && (stage === "02-database" || stage === "03-design") ? "01-scope" : stage;
+
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-canvas">
-      <StageSidebar
-        projectId={id}
-        projectName={detail.project.name}
-        stages={detail.stages}
-        currentKey={stage}
-      />
+      <StageSidebar projectId={id} projectName={detail.project.name} stages={navStages} currentKey={navKey} />
       <main className="flex min-w-0 flex-1 flex-col">
-        <MobileStageBar projectId={id} projectName={detail.project.name} stages={detail.stages} currentKey={stage} />
+        <MobileStageBar projectId={id} projectName={detail.project.name} stages={navStages} currentKey={navKey} />
         {reopened && stage !== "04-build" && (
           <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-amber-200 bg-amber-50 px-5 py-2.5 text-sm text-amber-950">
             <WarningCircle size={18} weight="fill" className="shrink-0 text-amber-500" />
@@ -98,7 +110,16 @@ export default function StagePage() {
           </div>
         )}
         <div className="min-h-0 flex-1">
-          {current.status !== "locked" && stage === "01-scope" ? (
+          {landing && (stage === "01-scope" || stage === "02-database" || stage === "03-design") ? (
+            <LandingBrief
+              projectId={id}
+              projectName={detail.project.name}
+              onDone={() => {
+                refresh();
+                router.push(`/projects/${id}/04-build`);
+              }}
+            />
+          ) : current.status !== "locked" && stage === "01-scope" ? (
             <ScopeStage
               key={stage}
               projectId={id}

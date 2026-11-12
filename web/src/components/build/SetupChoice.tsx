@@ -96,8 +96,15 @@ export default function SetupChoice({
       <p className="mt-1 text-sm text-muted">
         {setup.design_skipped
           ? "You skipped UI Design, so Gagesite builds a landing page and designs it here."
-          : "Visitors see the same site either way. Not sure? Keep the recommended one."}
+          : setup.chosen_at_start
+            ? "You chose this when you started. You can still change it until the build starts."
+            : "Visitors see the same site either way. Not sure? Keep the recommended one."}
       </p>
+      {!setup.design_skipped && setup.recommended_why && (
+        <p className="mt-2 rounded-xl bg-accent-soft/50 px-3 py-2 text-xs leading-relaxed text-accent-ink">
+          <span className="font-semibold">Recommended for your plan:</span> {setup.recommended_why}
+        </p>
+      )}
       <div className="mt-3 grid gap-2" role="radiogroup" aria-label="How the website is built">
         {options.map((option) => {
           const available = setup.available.includes(option.key);
@@ -125,13 +132,9 @@ export default function SetupChoice({
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                     {option.title}
-                    {option.tag && (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          option.tag === "Recommended" ? "bg-accent-soft text-accent-ink" : "bg-surface-2 text-muted"
-                        }`}
-                      >
-                        {option.tag}
+                    {(setup.recommended ? setup.recommended === option.key : option.tag === "Recommended") && (
+                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-semibold text-accent-ink">
+                        Recommended
                       </span>
                     )}
                   </span>

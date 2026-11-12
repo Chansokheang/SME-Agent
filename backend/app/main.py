@@ -635,6 +635,157 @@ def list_stages():
 
 class CreateProject(BaseModel):
     name: str
+    # What the owner is making: a full website (the five stages) or one landing page (a short
+    # brief replaces Plan, Database and UI Design).
+    kind: Literal["website", "landing"] = "website"
+    # For a website: how it's built, chosen up front ("unsure": Gagesite recommends after the plan).
+    setup: Literal["unsure", "all_in_one", "api_service", "static_external"] = "unsure"
+    api_language: Literal["typescript", "python"] = "typescript"
+
+
+START_JSON = "docs/00-start.json"
+LANDING_BRIEF_JSON = "docs/00-landing-brief.json"
+
+
+class LandingBrief(BaseModel):
+    """The landing page's short brief: what Plan, Database and UI Design would otherwise gather."""
+    business_name: str = PydanticField(min_length=1, max_length=120)
+    offer: str = PydanticField(min_length=1, max_length=1500)
+    industry: str = PydanticField(default="", max_length=120)
+    main_action: str = PydanticField(min_length=1, max_length=80)
+    main_action_link: str = PydanticField(default="", max_length=500)
+    facts: str = PydanticField(default="", max_length=4000)
+    contact: str = PydanticField(default="", max_length=1000)
+    location: str = PydanticField(default="", max_length=200)
+    languages: list[str] = PydanticField(default_factory=lambda: ["English"], max_length=4)
+    link: str = PydanticField(default="", max_length=500)
+    showpiece: Literal["modern", "3d", "video"] = "modern"
+    colors: list[str] = PydanticField(default_factory=list, max_length=4)
+    style_note: str = PydanticField(default="", max_length=1000)
+    # A prompt or brief the owner already has (for example from a prompt library they subscribe to).
+    prompt: str = PydanticField(default="", max_length=20000)
+
+
+def landing_scope(brief: LandingBrief) -> dict:
+    facts = [line.strip(" -*\t") for line in brief.facts.splitlines() if line.strip(" -*\t")]
+    return {
+        "version": 1,
+        "status": "ready",
+        "business": {
+            "name": brief.business_name.strip(),
+            "industry": brief.industry.strip(),
+            "description": brief.offer.strip(),
+            "location": brief.location.strip(),
+            "target_customers": [],
+            "goals": [f"Visitors {brief.main_action.strip().lower()}"],
+            "languages": [lang.strip() for lang in brief.languages if lang.strip()] or ["English"],
+        },
+        "details": {
+            "other": [{"label": f"Fact {i + 1}", "value": fact[:300]} for i, fact in enumerate(facts[:20])]
+                     + ([{"label": "Contact", "value": brief.contact.strip()}] if brief.contact.strip() else [])
+                     + ([{"label": "Main action link", "value": brief.main_action_link.strip()}]
+                        if brief.main_action_link.strip() else []),
+        },
+        "brief": {"main_action": {"label": brief.main_action.strip(),
+                                  "why": "The one thing this landing page should make visitors do."}},
+        "site_type": "Landing page",
+        "site_category": "landing",
+        "roles": [{"name": "Visitor", "description": "Anyone visiting the page"}],
+        "pages": [
+            {"name": "Home", "path": "/", "purpose": f"One landing page that leads to: {brief.main_action.strip()}",
+             "type": "landing", "roles": ["Visitor"], "sections": []},
+            {"name": "Privacy", "path": "/privacy", "purpose": "Privacy notice", "type": "content",
+             "roles": ["Visitor"], "sections": ["Privacy text"]},
+        ],
+        "features": [{"id": "F1", "name": brief.main_action.strip(), "description": brief.main_action.strip(),
+                      "priority": "must", "roles": ["Visitor"], "pages": ["Home"],
+                      "done_when": [f"A visitor can {brief.main_action.strip().lower()} from the page"]}],
+        "business_rules": [], "permissions": [], "flows": [], "lifecycles": [], "notifications": [],
+        "data_storage": {"why": "A landing page keeps no data of its own."},
+        "existing_site": {"url": brief.link.strip()} if brief.link.strip() else {},
+        "entities": [], "integrations": [], "keys": [],
+        "branding": {"colors": brief.colors, "style_notes": brief.style_note.strip()},
+        "content_checklist": [], "compliance": [],
+        "assumptions": ["Made from the owner's landing page brief (no plan interview)."],
+        "open_questions": [],
+    }
+
+
+@app.get("/api/projects/{project_id}/landing-brief")
+def get_landing_brief(project_id: str, session: Session = Depends(get_session)):
+    """The brief as the owner wrote it, and whether it can still change (until the build starts)."""
+    get_project(session, project_id)
+    data, _ = read_json(project_id, LANDING_BRIEF_JSON)
+    return {"brief": data if isinstance(data, dict) else None,
+            "locked": (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists()}
+
+
+@app.post("/api/projects/{project_id}/landing-brief")
+def submit_landing_brief(project_id: str, body: LandingBrief, session: Session = Depends(get_session)):
+    """A landing page's brief: writes the plan and the no-database design, skips UI Design and
+    opens Implementation with the landing page setup. The Motion Director takes it from there."""
+    get_project(session, project_id)
+    if read_start(project_id).get("kind") != "landing":
+        raise HTTPException(409, "This project is a website: it starts with the plan interview.")
+    if active_run(session, project_id):
+        raise HTTPException(409, "Wait for Gagesite to finish first")
+    if (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists():
+        raise HTTPException(409, "The page is already being built. Ask for changes in Implementation.")
+    # A changed brief before the build: the storyboard is redone from it.
+    for name in (STORYBOARD_JSON, STORYBOARD_MD):
+        (workspace.workspace_path(project_id) / name).unlink(missing_ok=True)
+    for url in (body.link, body.main_action_link):
+        if url.strip() and not URL.match(url.strip()) and not url.strip().startswith(("mailto:", "tel:")):
+            raise HTTPException(400, "Links must start with https:// (or mailto: / tel:)")
+    scope = landing_scope(body)
+    _, problems = validate_scope(scope)
+    if problems:
+        raise HTTPException(400, "The brief couldn't become a plan: " + "; ".join(problems[:3]))
+    root = workspace.workspace_path(project_id)
+    docs = root / "docs"
+    (docs / "01-sources").mkdir(parents=True, exist_ok=True)
+    (root / LANDING_BRIEF_JSON).write_text(json.dumps(body.model_dump(), indent=2, ensure_ascii=False), encoding="utf-8")
+    (root / SCOPE_JSON).write_text(json.dumps(scope, indent=2, ensure_ascii=False), encoding="utf-8")
+    (root / SCOPE_MD).write_text(
+        f"# {body.business_name.strip()}: landing page\n\n{body.offer.strip()}\n\n"
+        f"**Main action:** {body.main_action.strip()}\n\n"
+        + (f"## Key facts\n{body.facts.strip()}\n\n" if body.facts.strip() else "")
+        + (f"## Contact\n{body.contact.strip()}\n" if body.contact.strip() else ""), encoding="utf-8")
+    # The owner's own words (and prompt), for the Motion Director and the builder to read.
+    (docs / "01-sources" / "owner-brief.md").write_text(
+        "# The owner's landing page brief\n\n" + json.dumps(body.model_dump(exclude={"prompt"}), indent=2,
+                                                             ensure_ascii=False), encoding="utf-8")
+    if body.prompt.strip():
+        (docs / "01-sources" / "owner-style-prompt.md").write_text(
+            "# A prompt the owner wants this page to follow\n\nThe owner supplied this prompt (their own, or from "
+            "a prompt library they subscribe to). Follow its look, layout and motion, but with THIS business's "
+            "real content from the plan; never copy brand names or text that belong to someone else.\n\n---\n\n"
+            + body.prompt.strip(), encoding="utf-8")
+    schema, database_md = simple_site.build(scope)
+    (root / SCHEMA_JSON).write_text(json.dumps(schema, indent=2, ensure_ascii=False), encoding="utf-8")
+    (root / DATABASE_MD).write_text(database_md, encoding="utf-8")
+    if body.colors or body.style_note.strip():
+        design_kit.update_settings(project_id, design_kit.KitSettings(colors=body.colors, style_notes=body.style_note))
+    write_setup(project_id, {**BuildSetup(setup="landing", landing_style=body.showpiece).model_dump()})
+    for key in ("01-scope", DATA_STAGE):
+        state = get_stage_state(session, project_id, key)
+        state.status, state.approved_at = "approved", utcnow()
+        state.artifact_hash = workspace.file_hash(project_id, SCOPE_JSON if key == "01-scope" else SCHEMA_JSON)
+        session.add(state)
+    design = get_stage_state(session, project_id, DESIGN_STAGE)
+    if design.status == "locked":
+        design.status = "active"
+        session.add(design)
+    session.commit()
+    skip_design(project_id, session)  # approves UI Design as skipped and opens Implementation
+    if body.prompt.strip() == "":
+        (docs / "01-sources" / "owner-style-prompt.md").unlink(missing_ok=True)  # removed from an edited brief
+    return {"ok": True, "next": BUILD_STAGE}
+
+
+def read_start(project_id: str) -> dict:
+    data, _ = read_json(project_id, START_JSON)
+    return data if isinstance(data, dict) else {"kind": "website", "setup": "unsure"}
 
 
 @app.get("/api/projects")
@@ -705,6 +856,14 @@ def create_project(body: CreateProject, session: Session = Depends(get_session))
         ))
     session.commit()
     workspace.create_workspace(project.id)
+    start = {"kind": body.kind, "setup": "landing" if body.kind == "landing" else body.setup,
+             "api_language": body.api_language, "created_at": utcnow().isoformat()}
+    path = workspace.workspace_path(project.id) / START_JSON
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(start, indent=2), encoding="utf-8")
+    if body.kind == "website" and body.setup != "unsure":
+        # Chosen up front: the plan and the data design take it into account; changeable until the build starts.
+        write_setup(project.id, {**BuildSetup(setup=body.setup, api_language=body.api_language).model_dump()})
     sync_pipeline_file(session, project.id)
     return project
 
@@ -717,8 +876,15 @@ def project_detail(project_id: str, session: Session = Depends(get_session)):
         for s in session.exec(select(StageState).where(StageState.project_id == project_id)).all()
     }
     run = active_run(session, project_id)
+    start = read_start(project_id)
+    landing = start.get("kind") == "landing"
+    briefed = (workspace.workspace_path(project_id) / LANDING_BRIEF_JSON).exists()
     return {
         "project": project,
+        "kind": start.get("kind", "website"),
+        # A landing page's short brief stands in for Plan, Database and UI Design.
+        "brief_needed": landing and not briefed,
+        "handled_by_brief": ["01-scope", "02-database", "03-design"] if landing and briefed else [],
         "stages": [
             {
                 "key": s.key,
@@ -1139,6 +1305,10 @@ def setup_info(session: Session, project_id: str) -> dict:
         "needs_service": False,
         "locked": (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists(),
         "design_skipped": (workspace.workspace_path(project_id) / DESIGN_SKIP_JSON).exists(),
+        # Chosen when the project was created, or left to Gagesite's recommendation.
+        "chosen_at_start": read_start(project_id).get("setup") not in (None, "unsure"),
+        "recommended": recommended_setup(project_id),
+        "recommended_why": recommended_setup(project_id, why=True),
         "landing_video": landing_video(project_id),
         "landing_video_portrait": landing_video(project_id, "hero-portrait"),
         "video_prompts": landing_prompts(project_id),
@@ -1175,6 +1345,22 @@ def put_build_setup(project_id: str, body: BuildSetup, session: Session = Depend
                                  "Reopen UI Design to design a full website.")
     write_setup(project_id, data)
     return setup_info(session, project_id)
+
+
+def recommended_setup(project_id: str, why: bool = False) -> str:
+    """Gagesite's pick for this plan: a dedicated API when other programs must use the data,
+    a landing page for a landing project, otherwise the pages and API together."""
+    if read_start(project_id).get("kind") == "landing":
+        return "A single landing page." if why else "landing"
+    scope, _ = read_json(project_id, SCOPE_JSON)
+    if not isinstance(scope, dict):
+        return ""  # no plan yet: nothing to base a recommendation on
+    access = scope.get("program_access")
+    if isinstance(access, dict) and access.get("needed"):
+        return ("Your plan says other programs (an app, partners) will use your data, so a separate API "
+                "suits it best." if why else "api_service")
+    return ("Your plan is a website with its own data, so the pages and API together are simplest."
+            if why else "all_in_one")
 
 
 def write_setup(project_id: str, data: dict) -> None:
@@ -2515,8 +2701,13 @@ def delete_connection(project_id: str, session: Session = Depends(get_session)):
 # ---------- Stage 3: design kit and previews ----------
 
 def require_design_active(session: Session, project_id: str) -> None:
-    if get_stage_state(session, project_id, DESIGN_STAGE).status != "active":
-        raise HTTPException(409, "The design kit can only change while UI design is in progress")
+    if get_stage_state(session, project_id, DESIGN_STAGE).status == "active":
+        return
+    # A landing page skips UI Design: its logo, colours and photos can still change until it's built.
+    if (workspace.workspace_path(project_id) / DESIGN_SKIP_JSON).exists() \
+            and get_stage_state(session, project_id, BUILD_STAGE).status != "approved":
+        return
+    raise HTTPException(409, "The design kit can only change while UI design is in progress")
 
 
 @app.get("/api/projects/{project_id}/design-kit")

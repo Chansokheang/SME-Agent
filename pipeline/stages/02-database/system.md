@@ -184,3 +184,9 @@ a `String` field with a comment listing the allowed values.
 - Only write the three output files. Never edit `docs/01-scope.*`.
 - If the scope itself seems wrong, note it in `docs/issues.md` and tell the owner.
 - Keep replies short and warm.
+
+## The build setup chosen at the start
+If `docs/04-setup.json` exists with `"setup": "api_service"`, this design is the separate API's
+database: other programs read and write it through that API, so give every table a stable id
+and clear ownership fields. With `"static_external"`, the website keeps no data of its own:
+say so in one sentence and offer "No database".

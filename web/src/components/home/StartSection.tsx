@@ -1,11 +1,33 @@
 "use client";
 
-import { ArrowRight, CaretRight, FolderSimple, Trash } from "@phosphor-icons/react";
+import { ArrowRight, Browsers, CaretRight, FolderSimple, Rocket, Trash, type Icon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import RemoveProjectDialog from "@/components/home/RemoveProjectDialog";
-import { api, type Project } from "@/lib/api";
+import { api, type Project, type ProjectKind, type StartSetup } from "@/lib/api";
+
+const KINDS: { key: ProjectKind; icon: Icon; title: string; text: string }[] = [
+  {
+    key: "website",
+    icon: Browsers,
+    title: "A website",
+    text: "Pages, data, logins and admin tools. Planned with you step by step: plan, data, design, build, online.",
+  },
+  {
+    key: "landing",
+    icon: Rocket,
+    title: "A landing page",
+    text: "One commercial page that sells your business. A short brief, then a scroll storyboard and the build.",
+  },
+];
+
+const SETUPS: { key: StartSetup; title: string; text: string }[] = [
+  { key: "unsure", title: "Not sure", text: "Gagesite recommends one after your plan." },
+  { key: "all_in_one", title: "UI + API together", text: "Pages and API in one app, with your own database. Best for most." },
+  { key: "api_service", title: "UI + dedicated API", text: "The website plus its own API service, for when an app or partners use your data too." },
+  { key: "static_external", title: "Static UI", text: "Pages only, calling another service's API you already have." },
+];
 
 export default function StartSection() {
   const router = useRouter();
@@ -23,13 +45,17 @@ export default function StartSection() {
     });
   }, []);
 
+  const [kind, setKind] = useState<ProjectKind>("website");
+  const [setup, setSetup] = useState<StartSetup>("unsure");
+
   async function create(event: React.FormEvent) {
     event.preventDefault();
     if (!name.trim()) return;
     setCreating(true);
     setError(null);
     try {
-      const project = await api.createProject(name);
+      const project = await api.createProject(name, kind, kind === "website" ? setup : "unsure");
+      // A landing page starts with its short brief (in place of the plan interview).
       router.push(`/projects/${project.id}/01-scope`);
     } catch (e) {
       setError((e as Error).message);
@@ -47,12 +73,64 @@ export default function StartSection() {
           Start with your business name
         </h2>
         <p className="mt-6 max-w-xl text-lg text-white/75">
-          The first conversation takes about ten minutes. You can stop and come back any time.
+          {kind === "landing"
+            ? "A two-minute brief, then Gagesite storyboards and builds your page."
+            : "The first conversation takes about ten minutes. You can stop and come back any time."}
         </p>
 
         <form onSubmit={create} className="mt-12 max-w-2xl">
-          <label htmlFor="project-name" className="text-sm font-medium text-white/85">
-            Project name
+          <fieldset>
+            <legend className="text-sm font-medium text-white/85">What are you making?</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup">
+              {KINDS.map((k) => (
+                <button
+                  key={k.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={kind === k.key}
+                  onClick={() => setKind(k.key)}
+                  className={`rounded-2xl border px-4 py-3 text-left transition active:scale-[0.99] ${
+                    kind === k.key ? "border-white bg-white/15" : "border-white/20 hover:border-white/50"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 font-semibold">
+                    <k.icon size={18} weight="duotone" />
+                    {k.title}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-white/70">{k.text}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          {kind === "website" && (
+            <fieldset className="mt-5 [animation:rise-in_200ms_ease-out]">
+              <legend className="text-sm font-medium text-white/85">How should it be built?</legend>
+              <div className="mt-2 flex flex-wrap gap-2" role="radiogroup">
+                {SETUPS.map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={setup === s.key}
+                    title={s.text}
+                    onClick={() => setSetup(s.key)}
+                    className={`rounded-full border px-4 py-2 text-sm transition active:scale-[0.98] ${
+                      setup === s.key ? "border-white bg-white font-semibold text-[#0e2a57]" : "border-white/25 hover:border-white/60"
+                    }`}
+                  >
+                    {s.title}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-white/65">
+                {SETUPS.find((s) => s.key === setup)?.text} You can change it until the build starts.
+              </p>
+            </fieldset>
+          )}
+
+          <label htmlFor="project-name" className="mt-6 block text-sm font-medium text-white/85">
+            {kind === "landing" ? "Business or product name" : "Project name"}
           </label>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row">
             <input

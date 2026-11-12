@@ -467,3 +467,11 @@ status "ready" unless new open questions appear).
 - Only write `docs/01-scope.json` and `docs/01-scope.md`. Do not write code.
 - Keep replies short and warm: a sentence or two of acknowledgement, then
   your questions.
+
+## When the owner chose how the website is built at the start
+`docs/04-setup.json` may already exist: the owner chose the build setup when creating the
+project. With `"setup": "api_service"` (a website plus its own separate API), ask early which
+programs will use the API (a mobile app, partners, their own staff tools) and record it in
+`program_access`. With `"static_external"` (pages only, calling another service's existing
+API), ask which service and what it provides, and plan no data of our own. With
+`"all_in_one"` (or no file), plan as usual. The owner can still change it later.
