@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens: white + light blue, light theme only (user preference).
+ * One accent (blue). Light blue is used for tints; the stronger blue carries
+ * primary buttons so white text stays at WCAG AA contrast.
+ * Radius scale: containers 16px (rounded-2xl), controls 12px (rounded-xl), badges full.
+ */
+@theme inline {
+  --color-canvas: #f5f9fe;
+  --color-surface: #fdfeff;
+  --color-surface-2: #f0f6fd;
+  --color-line: #dfe9f5;
+  --color-line-strong: #c4d6ec;
+  --color-ink: #0e1b2c;
+  --color-muted: #55657a;
+  --color-faint: #8494a8;
+  --color-accent: #2266d4;
+  --color-accent-hover: #1a55b3;
+  --color-accent-soft: #e5f0fd;
+  --color-accent-ink: #1a4f9e;
+  --color-danger: #c03a3a;
+  --color-danger-soft: #fdeeee;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: "Cabinet Grotesk", var(--font-geist-sans), sans-serif;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* Labels appearing as a collapsed panel expands. */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Dialogs: the backdrop fades, the card rises a little. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+/* Markdown rendered from stage outputs (docs/*.md) and chat replies. */
+.prose-doc h1 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 0.75rem; }
+.prose-doc h2 { font-size: 1.02rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.prose-doc h3 { font-weight: 600; margin: 1rem 0 0.4rem; }
+.prose-doc p { margin: 0.5rem 0; line-height: 1.65; }
+.prose-doc p:first-child { margin-top: 0; }
+.prose-doc p:last-child { margin-bottom: 0; }
+.prose-doc ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+.prose-doc ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+.prose-doc li { margin: 0.25rem 0; line-height: 1.6; }
+.prose-doc li::marker { color: var(--color-faint); }
+.prose-doc strong { font-weight: 600; }
+.prose-doc table { border-collapse: collapse; margin: 0.75rem 0; font-size: 0.875rem; }
+.prose-doc th, .prose-doc td { border: 1px solid var(--color-line); padding: 0.4rem 0.65rem; text-align: left; }
+.prose-doc th { background: var(--color-surface-2); font-weight: 600; }
+.prose-doc code { background: var(--color-surface-2); padding: 0.1rem 0.35rem; border-radius: 6px; font-size: 0.85em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

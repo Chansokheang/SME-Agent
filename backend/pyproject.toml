@@ -1,0 +1,24 @@
+[project]
+name = "sme-builder-backend"
+version = "0.1.0"
+description = "Stage pipeline runner for Gagesite (drives `claude -p`)."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sse-starlette>=2.1",
+    "sqlmodel>=0.0.22",
+    "pydantic-settings>=2.6",
+    "pandas>=3.1.0",
+    "openpyxl>=3.1.5",
+    "python-multipart>=0.0.32",
+    "psycopg[binary]>=3.3.6",
+    "cryptography>=50.0.2",
+    "python-docx>=1.2.0",
+    "python-pptx>=1.0.2",
+    "playwright>=1.64.1",
+    "paramiko>=5.1.0",
+]
+
+[tool.uv]
+package = false

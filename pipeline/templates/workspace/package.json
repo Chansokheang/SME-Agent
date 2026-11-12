@@ -1,0 +1,22 @@
+{
+  "name": "workspace",
+  "private": true,
+  "description": "The only commands Gagesite may run: UI Design searches licensed photos; Implementation builds and tests the website in site/.",
+  "scripts": {
+    "site:install": "node .claude/hooks/site.cjs install",
+    "site:db": "node .claude/hooks/site.cjs db",
+    "site:seed": "node .claude/hooks/site.cjs seed",
+    "site:typecheck": "node .claude/hooks/site.cjs typecheck",
+    "site:lint": "node .claude/hooks/site.cjs lint",
+    "site:build": "node .claude/hooks/site.cjs build",
+    "site:check": "node .claude/hooks/site.cjs check",
+    "site:motion": "node .claude/hooks/site.cjs motion",
+    "design-images": "node .claude/hooks/images.cjs",
+    "design-shot": "node .claude/hooks/design_shot.cjs",
+    "design-fetch": "node .claude/hooks/stitch_fetch.cjs",
+    "service:install": "node .claude/hooks/service.cjs install",
+    "service:db": "node .claude/hooks/service.cjs db",
+    "service:seed": "node .claude/hooks/service.cjs seed",
+    "service:typecheck": "node .claude/hooks/service.cjs typecheck"
+  }
+}

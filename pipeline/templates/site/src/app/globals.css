@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* Replaced in Stage 4 with the approved design tokens (docs/03-design/tokens.json). */
+@theme {
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #111827;
+  --color-muted: #6b7280;
+  --color-primary: #1f2937;
+  --color-primary-text: #ffffff;
+  --color-accent: #2563eb;
+  --color-border: #e5e7eb;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+}

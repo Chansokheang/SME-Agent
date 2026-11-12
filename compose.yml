@@ -1,0 +1,49 @@
+# Gagesite on a Linux server (see docs/DEPLOY.md).
+#
+# Host networking: Gagesite starts website previews (ports 3100+) and their APIs (4100+) while it
+# works, and shows them at http://localhost:<port>. On the host's network those ports are the
+# server's own, so an SSH tunnel (scripts/tunnel.ps1) brings all of them to your computer. It also
+# avoids Docker's default network, which on some servers can't look up addresses.
+#
+# Nothing listens on the internet: BIND_HOST=127.0.0.1 (the default) keeps Gagesite on the server
+# itself. Gagesite has no sign-in, so keep it that way unless you know who can reach the server.
+name: gagesite
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      network: host
+      args:
+        UID: ${GAGESITE_UID:-1000}
+        DOCKER_GID: ${DOCKER_GID:-998}
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      BIND_HOST: ${BIND_HOST:-127.0.0.1}
+      CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
+    volumes:
+      - ./data:/data                                 # the database, the encryption key, every project
+      - claude-home:/home/builder/.claude            # Claude Code's own files (conversations)
+      - /var/run/docker.sock:/var/run/docker.sock    # APIs put on "this computer" run on the host's Docker
+
+  web:
+    build:
+      context: ./web
+      network: host
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8001}
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      HOSTNAME: ${BIND_HOST:-127.0.0.1}
+      PORT: "3000"
+    depends_on:
+      - backend
+
+volumes:
+  claude-home:

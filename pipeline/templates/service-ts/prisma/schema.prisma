@@ -1,0 +1,20 @@
+// Replaced in Stage 4 with the approved data design (docs/02-schema.prisma),
+// using SQLite while building. Production switches the provider to postgresql.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// The starter's user table, used by the auth module. Replace it with the data design's user
+// table (same name and fields as docs/02-schema.prisma, the password only as passwordHash).
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String?
+  role         String  @default("user")
+  passwordHash String
+}

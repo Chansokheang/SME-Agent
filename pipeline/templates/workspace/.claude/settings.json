@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": ["Read(./.uploads/**)", "Edit(./.uploads/**)", "Write(./.uploads/**)"]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_stage.py\"",
+            "timeout": 1800
+          }
+        ]
+      }
+    ]
+  }
+}
