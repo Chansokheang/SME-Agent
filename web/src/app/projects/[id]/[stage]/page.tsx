@@ -14,21 +14,34 @@ import ScopeStage from "@/components/ScopeStage";
 import StageSidebar, { MobileStageBar } from "@/components/StageSidebar";
 import { api, type ProjectDetail } from "@/lib/api";
 
+// Each stage is its own page, so switching stages starts this component afresh. The last
+// details of each project are kept here so the switch shows them at once (no loading screen),
+// and are then refreshed quietly.
+const lastDetail = new Map<string, ProjectDetail>();
+
 export default function StagePage() {
   const { id, stage } = useParams<{ id: string; stage: string }>();
   const router = useRouter();
   const fromSetup = useSearchParams().get("from") === "setup";
-  const [detail, setDetail] = useState<ProjectDetail | null>(null);
+  const [detail, setDetail] = useState<ProjectDetail | null>(() => lastDetail.get(id) ?? null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     api
       .getProject(id)
-      .then(setDetail)
+      .then((d) => {
+        lastDetail.set(id, d);
+        setDetail(d);
+      })
       .catch((e) => setError(e.message));
   }, [id]);
 
   useEffect(refresh, [refresh]);
+  // A change made from inside a stage (e.g. "Only need a landing page?") that reshapes the project.
+  useEffect(() => {
+    window.addEventListener("gagesite:project-changed", refresh);
+    return () => window.removeEventListener("gagesite:project-changed", refresh);
+  }, [refresh]);
   // Notice work started elsewhere (another tab or window): check every few seconds while visible.
   useEffect(() => {
     const timer = window.setInterval(() => {

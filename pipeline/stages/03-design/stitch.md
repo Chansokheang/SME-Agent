@@ -20,9 +20,10 @@ Never mention tool names, Google's API or keys to the owner; say "Google Stitch"
 3. Generating a screen can take a few minutes. If a call times out, it usually still
    finishes: look the screen up with Stitch's get or list tools before asking again,
    and never ask for the same screen more than twice.
-4. Save each screen's screenshot and HTML with `npm run design-fetch`, named
-   `style-<id>-screen` (e.g. `style-1-screen`), and look at the screenshot with the
-   Read tool. It is saved in `docs/03-design/stitch/`.
+4. Save each screen's screenshot and HTML with `npm run design-fetch`, both named
+   `style-<id>-screen` (e.g. `style-1-screen`: the picture becomes `.png`, the page `.html`),
+   and look at the screenshot with the Read tool. They are saved in `docs/03-design/stitch/`,
+   and the owner can compare Stitch's original with your version in UI Design.
 5. Write `docs/03-design/directions/<id>.html` yourself, following the HTML rules: take
    the look of Stitch's screen (layout feel, type sizes, colours, spacing, imagery),
    rebuilt with the real content and the component strip, fixed wherever it breaks the

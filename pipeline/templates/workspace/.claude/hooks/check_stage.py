@@ -1005,6 +1005,58 @@ def check_blueprint() -> None:
         block("docs/03-design/blueprint.json: " + "; ".join(problems) + ".")
 
 
+def check_directions(data: dict) -> None:
+    """The Motion Director's first step: 2 or 3 truly different directions for the owner to pick."""
+    problems = []
+    directions = data.get("directions")
+    if not isinstance(directions, list) or not 2 <= len(directions) <= 3:
+        block("docs/04-directions.json: give 2 or 3 directions.")
+    fields = ("id", "name", "line", "big_idea", "layout", "hero", "signature_motion")
+    displays, palettes = [], []
+    for i, d in enumerate(directions):
+        if not isinstance(d, dict):
+            problems.append(f"direction {i + 1} must be an object")
+            continue
+        label = d.get("name") or f"direction {i + 1}"
+        for key in fields:
+            if not str(d.get(key, "")).strip():
+                problems.append(f"{label}: '{key}' is empty")
+        font = (d.get("type") or {}).get("display", "") if isinstance(d.get("type"), dict) else ""
+        if not str(font).strip():
+            problems.append(f"{label}: type.display is empty")
+        palette = d.get("palette")
+        if not (isinstance(palette, list) and 2 <= len(palette) <= 6):
+            problems.append(f"{label}: 'palette' needs 2 to 6 colours")
+            palette = []
+        displays.append(str(font).strip().lower())
+        palettes.append(tuple(str(c).lower() for c in palette))
+    if len(set(displays)) < len(displays):
+        problems.append("two directions use the same display font: each direction needs its own type")
+    if len(set(palettes)) < len(palettes):
+        problems.append("two directions use the same palette")
+    if data.get("status") not in ("choose", "chosen"):
+        problems.append("status must be 'choose'")
+    if problems:
+        block("docs/04-directions.json: " + "; ".join(problems[:10]) + ".")
+
+
+def check_director() -> None:
+    """Directions first; once the owner has chosen one, the storyboard."""
+    path = ROOT / "docs" / "04-directions.json"
+    if not path.exists():
+        block("docs/04-directions.json does not exist yet. Offer the directions first (see 'Step 1' in your role "
+              "instructions); the storyboard comes after the owner picks one.")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        block(f"docs/04-directions.json is not valid JSON ({exc}).")
+    if not isinstance(data, dict):
+        block("docs/04-directions.json must be an object.")
+    check_directions(data)
+    if data.get("status") == "chosen":
+        check_storyboard()
+
+
 def check_storyboard() -> None:
     """The Motion Director's storyboard: a concept, a big idea, and sections that cover the scroll."""
     path = ROOT / "docs" / "04-storyboard.json"
@@ -1057,7 +1109,7 @@ def check_storyboard() -> None:
 
 
 ROLE_CHECKS = {"advisor": check_advisor, "dev": check_developer, "api_dev": check_api_developer, "qa": check_qa,
-               "flowchart": check_flowchart, "strategist": check_blueprint, "director": check_storyboard}
+               "flowchart": check_flowchart, "strategist": check_blueprint, "director": check_director}
 
 
 # Settings the platform gives the live website itself (Stage 5).

@@ -16,10 +16,19 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FlowSwimlane, LifecycleDiagram } from "@/components/scope/PlanDiagrams";
+import {
+  FlowSwimlane,
+  LifecycleDiagram,
+} from "@/components/scope/PlanDiagrams";
 import SiteMap, { lifecycleAnchor } from "@/components/scope/SiteMap";
 import ApprovalBar from "@/components/stage/ApprovalBar";
-import { api, type ContentItem, type Scope, type ScopeArtifact, type ScopeDetails } from "@/lib/api";
+import {
+  api,
+  type ContentItem,
+  type Scope,
+  type ScopeArtifact,
+  type ScopeDetails,
+} from "@/lib/api";
 
 /*
  * The plan as one plain document: numbered sections and subsections, like a requirements
@@ -37,8 +46,16 @@ type DetailsEditing = {
   onSave?: (details: ScopeDetails) => Promise<void>;
   /** Image items of the checklist: upload the owner's files, or use sample photos for now. */
   projectId?: string;
-  onUploadContent?: (index: number, item: string, files: File[]) => Promise<void>;
-  onChooseContent?: (index: number, item: string, status: "needed" | "placeholder") => Promise<void>;
+  onUploadContent?: (
+    index: number,
+    item: string,
+    files: File[],
+  ) => Promise<void>;
+  onChooseContent?: (
+    index: number,
+    item: string,
+    status: "needed" | "placeholder",
+  ) => Promise<void>;
 };
 /** `action` sits on the right of the subsection heading (e.g. an Edit button). */
 type Sub = {
@@ -53,7 +70,9 @@ type Sec = { id: string; title: string; subs: Sub[] };
 function pendingCount(scope: Scope) {
   return (
     scope.open_questions.length +
-    (scope.content_checklist ?? []).filter((c) => effectiveStatus(c, scope.details) === "needed").length +
+    (scope.content_checklist ?? []).filter(
+      (c) => effectiveStatus(c, scope.details) === "needed",
+    ).length +
     (scope.details?.other ?? []).filter((o) => o.label && !o.value).length
   );
 }
@@ -70,6 +89,7 @@ export default function ScopePanel({
   projectId,
   onUploadContent,
   onChooseContent,
+  footer,
 }: {
   artifact: ScopeArtifact | null;
   approved: boolean;
@@ -82,6 +102,8 @@ export default function ScopePanel({
   projectId?: string;
   onUploadContent?: DetailsEditing["onUploadContent"];
   onChooseContent?: DetailsEditing["onChooseContent"];
+  /** Shown at the bottom of the plan (e.g. "Only need a landing page?"). */
+  footer?: React.ReactNode;
 }) {
   const [view, setView] = useState<View>("plan");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,8 +127,19 @@ export default function ScopePanel({
       onUploadContent,
       onChooseContent,
     };
-  }, [onSaveDetails, approved, running, detailsOpen, projectId, onUploadContent, onChooseContent]);
-  const sections = useMemo(() => (scope ? buildDocument(scope, editing) : []), [scope, editing]);
+  }, [
+    onSaveDetails,
+    approved,
+    running,
+    detailsOpen,
+    projectId,
+    onUploadContent,
+    onChooseContent,
+  ]);
+  const sections = useMemo(
+    () => (scope ? buildDocument(scope, editing) : []),
+    [scope, editing],
+  );
 
   const status = running
     ? "Gagesite is updating the plan"
@@ -123,7 +156,9 @@ export default function ScopePanel({
     // Two frames: coming from another view, the plan has to render before it can scroll.
     requestAnimationFrame(() =>
       requestAnimationFrame(() =>
-        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        document
+          .getElementById(id)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
       ),
     );
   };
@@ -133,7 +168,9 @@ export default function ScopePanel({
       <header className="border-b border-line px-6 py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-lg font-bold tracking-tight">The plan</h2>
+            <h2 className="font-display text-lg font-bold tracking-tight">
+              The plan
+            </h2>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
               <span
                 className={`size-1.5 rounded-full ${
@@ -158,9 +195,25 @@ export default function ScopePanel({
               )}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-0.5" role="tablist" aria-label="Plan views">
-            <ViewButton icon={FileText} label="Plan" active={view === "plan"} onClick={() => setView("plan")} text />
-            <ViewButton icon={TreeStructure} label="Site map" active={view === "map"} onClick={() => setView("map")} text />
+          <div
+            className="flex shrink-0 items-center gap-0.5"
+            role="tablist"
+            aria-label="Plan views"
+          >
+            <ViewButton
+              icon={FileText}
+              label="Plan"
+              active={view === "plan"}
+              onClick={() => setView("plan")}
+              text
+            />
+            <ViewButton
+              icon={TreeStructure}
+              label="Site map"
+              active={view === "map"}
+              onClick={() => setView("map")}
+              text
+            />
             <ViewButton
               icon={FileText}
               label="Short summary"
@@ -197,10 +250,14 @@ export default function ScopePanel({
           <div className="mx-auto max-w-[44rem] px-6 py-8">
             {artifact.markdown ? (
               <div className="prose-doc text-sm">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{artifact.markdown}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {artifact.markdown}
+                </ReactMarkdown>
               </div>
             ) : (
-              <p className="text-sm text-muted">Gagesite writes a short summary once the plan is ready.</p>
+              <p className="text-sm text-muted">
+                Gagesite writes a short summary once the plan is ready.
+              </p>
             )}
           </div>
         ) : view === "map" ? (
@@ -208,15 +265,21 @@ export default function ScopePanel({
         ) : view === "json" ? (
           <div className="px-6 py-6">
             <p className="mb-3 text-xs text-faint">
-              The plan as a file. The next stages read it; you never need to edit it.
+              The plan as a file. The next stages read it; you never need to
+              edit it.
             </p>
             <pre className="overflow-x-auto rounded-xl bg-surface-2 p-4 font-mono text-xs leading-relaxed text-ink">
               {JSON.stringify(scope, null, 2)}
             </pre>
           </div>
         ) : (
-          <PlanDocument scope={scope} sections={sections} scrollRef={scrollRef} />
+          <PlanDocument
+            scope={scope}
+            sections={sections}
+            scrollRef={scrollRef}
+          />
         )}
+        {footer}
       </div>
 
       <ApprovalBar
@@ -232,7 +295,11 @@ export default function ScopePanel({
         draftHint="Gagesite marks the plan ready once the main questions are answered."
         message={
           artifact && scope ? (
-            <ApproveMessage artifact={artifact} pending={pending} onShow={() => jumpTo("your-information")} />
+            <ApproveMessage
+              artifact={artifact}
+              pending={pending}
+              onShow={() => jumpTo("your-information")}
+            />
           ) : undefined
         }
         // Approving with things still to add is fine: the message above the button already says so.
@@ -253,12 +320,17 @@ function ApproveMessage({
   pending: number;
   onShow: () => void;
 }) {
-  const missing = (artifact.required ?? []).filter((r) => !r.done).map((r) => r.label);
-  if (artifact.errors.length) return <>The plan file has a problem Gagesite still needs to fix.</>;
+  const missing = (artifact.required ?? [])
+    .filter((r) => !r.done)
+    .map((r) => r.label);
+  if (artifact.errors.length)
+    return <>The plan file has a problem Gagesite still needs to fix.</>;
   if (missing.length) {
     return (
       <>
-        <span className="font-semibold text-ink">To approve, only add {missing.join(", ")}.</span>{" "}
+        <span className="font-semibold text-ink">
+          To approve, only add {missing.join(", ")}.
+        </span>{" "}
         {missing.includes("the business name")
           ? "Tell Gagesite in the chat, or type it under 5.1 Your details."
           : "Tell Gagesite in the chat."}{" "}
@@ -269,14 +341,18 @@ function ApproveMessage({
   if (artifact.ready || pending === 0) {
     return (
       <>
-        <span className="font-semibold text-ink">Ready for your review.</span> Approving unlocks database design.
+        <span className="font-semibold text-ink">Ready for your review.</span>{" "}
+        Approving unlocks database design.
       </>
     );
   }
   return (
     <>
       <span className="font-semibold text-ink">You can approve now.</span>{" "}
-      <button onClick={onShow} className="text-accent-ink underline-offset-2 hover:underline">
+      <button
+        onClick={onShow}
+        className="text-accent-ink underline-offset-2 hover:underline"
+      >
         {pending} {pending === 1 ? "thing" : "things"}
       </button>{" "}
       can be added later; the next steps use sensible defaults until then.
@@ -305,7 +381,9 @@ function ViewButton({
       title={label}
       onClick={onClick}
       className={`flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition ${
-        active ? "bg-accent-soft text-accent-ink" : "text-faint hover:bg-surface-2 hover:text-ink"
+        active
+          ? "bg-accent-soft text-accent-ink"
+          : "text-faint hover:bg-surface-2 hover:text-ink"
       }`}
     >
       {text ? label : <IconComponent size={16} />}
@@ -320,9 +398,12 @@ function EmptyScope() {
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent">
           <FileText size={28} />
         </span>
-        <p className="mt-4 font-display text-lg font-bold">Your plan starts here</p>
+        <p className="mt-4 font-display text-lg font-bold">
+          Your plan starts here
+        </p>
         <p className="mt-1 text-sm leading-relaxed text-muted">
-          As you chat, Gagesite writes the plan here: goals, features, how the site works and what it costs.
+          As you chat, Gagesite writes the plan here: goals, features, how the
+          site works and what it costs.
         </p>
       </div>
     </div>
@@ -331,10 +412,17 @@ function EmptyScope() {
 
 function Skeleton() {
   return (
-    <div className="mx-auto max-w-[44rem] animate-pulse space-y-4 px-6 py-8" aria-label="Loading plan">
+    <div
+      className="mx-auto max-w-[44rem] animate-pulse space-y-4 px-6 py-8"
+      aria-label="Loading plan"
+    >
       <div className="h-7 w-48 rounded bg-surface-2" />
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="h-4 rounded bg-surface-2" style={{ width: `${90 - i * 8}%` }} />
+        <div
+          key={i}
+          className="h-4 rounded bg-surface-2"
+          style={{ width: `${90 - i * 8}%` }}
+        />
       ))}
     </div>
   );
@@ -368,7 +456,8 @@ function PlanDocument({
         if (el && el.getBoundingClientRect().top <= top) current = s.id;
       }
       // At the very bottom, the last section is the one being read.
-      if (root.scrollTop + root.clientHeight >= root.scrollHeight - 4) current = sections.at(-1)?.id ?? current;
+      if (root.scrollTop + root.clientHeight >= root.scrollHeight - 4)
+        current = sections.at(-1)?.id ?? current;
       setActive(current);
     };
     const onScroll = () => {
@@ -410,7 +499,9 @@ function PlanDocument({
                         : "border-transparent text-muted hover:text-ink"
                     }`}
                   >
-                    <span className="mr-1.5 tabular-nums text-faint">{i + 1}</span>
+                    <span className="mr-1.5 tabular-nums text-faint">
+                      {i + 1}
+                    </span>
                     {s.title}
                   </button>
                 </li>
@@ -422,18 +513,26 @@ function PlanDocument({
         <article className="min-w-0 max-w-[44rem]">
           <header className="pb-6">
             {scope.site_type && (
-              <p className="text-xs font-medium text-accent-ink first-letter:uppercase">{scope.site_type}</p>
+              <p className="text-xs font-medium text-accent-ink first-letter:uppercase">
+                {scope.site_type}
+              </p>
             )}
             <h1 className="mt-1 font-display text-[1.75rem] font-bold leading-tight tracking-tight">
               {scope.business.name || "Your business"}: website plan
             </h1>
             {scope.business.description && (
-              <p className="mt-2 text-sm leading-7 text-muted">{scope.business.description}</p>
+              <p className="mt-2 text-sm leading-7 text-muted">
+                {scope.business.description}
+              </p>
             )}
           </header>
 
           {sections.map((s, i) => (
-            <section key={s.id} id={s.id} className="scroll-mt-6 border-t border-line pb-4 pt-8">
+            <section
+              key={s.id}
+              id={s.id}
+              className="scroll-mt-6 border-t border-line pb-4 pt-8"
+            >
               <h2 className="font-display text-xl font-bold tracking-tight">
                 <span className="mr-2 tabular-nums text-accent">{i + 1}</span>
                 {s.title}
@@ -449,7 +548,9 @@ function PlanDocument({
                     </h3>
                     {sub.action}
                   </div>
-                  <div className="mt-2 space-y-3 text-sm leading-7 text-ink">{sub.body}</div>
+                  <div className="mt-2 space-y-3 text-sm leading-7 text-ink">
+                    {sub.body}
+                  </div>
                 </div>
               ))}
             </section>
@@ -467,7 +568,9 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
   const must = scope.features.filter((f) => f.priority === "must");
   const should = scope.features.filter((f) => f.priority === "should");
   const could = scope.features.filter((f) => f.priority === "could");
-  const goals = brief.goals?.length ? brief.goals : business.goals.map((goal) => ({ goal, measure: "" }));
+  const goals = brief.goals?.length
+    ? brief.goals
+    : business.goals.map((goal) => ({ goal, measure: "" }));
   const customers = brief.customers?.length
     ? brief.customers
     : business.target_customers.map((name) => ({
@@ -509,12 +612,18 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
         ),
         sub("overview-action", "Main action", brief.main_action?.label, () => (
           <p>
-            <strong className="font-semibold">{brief.main_action!.label}.</strong> {brief.main_action!.why}
+            <strong className="font-semibold">
+              {brief.main_action!.label}.
+            </strong>{" "}
+            {brief.main_action!.why}
           </p>
         )),
         sub("overview-goals", "Goals", goals.length, () =>
           goals.some((g) => g.measure) ? (
-            <Table head={["Goal", "How we will know"]} rows={goals.map((g) => [g.goal, g.measure])} />
+            <Table
+              head={["Goal", "How we will know"]}
+              rows={goals.map((g) => [g.goal, g.measure])}
+            />
           ) : (
             <Bullets items={goals.map((g) => g.goal)} />
           ),
@@ -524,7 +633,9 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
             {customers.map((c) => (
               <li key={c.name}>
                 <strong className="font-semibold">{c.name}</strong>
-                {c.needs.length > 0 && <span className="text-muted">: {c.needs.join("; ")}</span>}
+                {c.needs.length > 0 && (
+                  <span className="text-muted">: {c.needs.join("; ")}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -532,12 +643,20 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
         sub(
           "overview-look",
           "Look and feel",
-          scope.branding.tone || scope.branding.style_notes || scope.branding.colors.length,
+          scope.branding.tone ||
+            scope.branding.style_notes ||
+            scope.branding.colors.length,
           () => (
             <>
-              <p>{[scope.branding.tone, scope.branding.style_notes].filter(Boolean).join(". ")}</p>
+              <p>
+                {[scope.branding.tone, scope.branding.style_notes]
+                  .filter(Boolean)
+                  .join(". ")}
+              </p>
               {scope.branding.colors.length > 0 && (
-                <p className="text-muted">Colours: {scope.branding.colors.join(", ")}</p>
+                <p className="text-muted">
+                  Colours: {scope.branding.colors.join(", ")}
+                </p>
               )}
             </>
           ),
@@ -552,10 +671,13 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
           <ul className="list-disc space-y-3 pl-5 marker:text-line-strong">
             {must.map((f) => (
               <li key={f.id}>
-                <strong className="font-semibold">{f.name}.</strong> {f.description}
+                <strong className="font-semibold">{f.name}.</strong>{" "}
+                {f.description}
                 {(f.done_when?.length ?? 0) > 0 && (
                   <>
-                    <p className="mt-1 text-xs font-medium text-faint">Done when:</p>
+                    <p className="mt-1 text-xs font-medium text-faint">
+                      Done when:
+                    </p>
                     <ul className="list-[circle] pl-5 text-muted marker:text-line-strong">
                       {f.done_when!.map((check) => (
                         <li key={check}>{check}</li>
@@ -580,25 +702,38 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
             mono={1}
           />
         )),
-        sub("features-rules", "Rules the site follows", scope.business_rules?.length, () => (
-          <ol className="list-decimal space-y-1 pl-5 marker:text-faint">
-            {scope.business_rules!.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ol>
-        )),
-        sub("features-legal", "Legal and trust", scope.compliance?.length, () => (
-          <>
-            <ul className="list-disc space-y-1.5 pl-5 marker:text-line-strong">
-              {scope.compliance!.map((c) => (
-                <li key={c.item}>
-                  <strong className="font-semibold">{c.item}.</strong> <span className="text-muted">{c.why}</span>
-                </li>
+        sub(
+          "features-rules",
+          "Rules the site follows",
+          scope.business_rules?.length,
+          () => (
+            <ol className="list-decimal space-y-1 pl-5 marker:text-faint">
+              {scope.business_rules!.map((r) => (
+                <li key={r}>{r}</li>
               ))}
-            </ul>
-            <p className="text-xs text-faint">Usually required; worth confirming with an expert.</p>
-          </>
-        )),
+            </ol>
+          ),
+        ),
+        sub(
+          "features-legal",
+          "Legal and trust",
+          scope.compliance?.length,
+          () => (
+            <>
+              <ul className="list-disc space-y-1.5 pl-5 marker:text-line-strong">
+                {scope.compliance!.map((c) => (
+                  <li key={c.item}>
+                    <strong className="font-semibold">{c.item}.</strong>{" "}
+                    <span className="text-muted">{c.why}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-faint">
+                Usually required; worth confirming with an expert.
+              </p>
+            </>
+          ),
+        ),
         sub(
           "features-behind",
           "Behind the scenes",
@@ -610,69 +745,104 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
             <Facts
               rows={[
                 ["Who uses it", scope.roles.map((r) => r.name).join(", ")],
-                ["Information kept", scope.entities.map((e) => e.name).join(", ")],
+                [
+                  "Information kept",
+                  scope.entities.map((e) => e.name).join(", "),
+                ],
                 ["Outside services", scope.integrations.join(", ")],
                 [
                   "Database",
                   scope.data_storage?.needs_database == null
                     ? ""
                     : `${scope.data_storage.needs_database ? "Needed" : "Not needed: a simple site is enough"}${
-                        scope.data_storage.why ? `. ${scope.data_storage.why}` : ""
+                        scope.data_storage.why
+                          ? `. ${scope.data_storage.why}`
+                          : ""
                       }`,
                 ],
               ]}
             />
           ),
         ),
-        sub("features-keys", "Keys the website may need", scope.keys?.length, () => (
-          <>
-            <ul className="space-y-1.5">
-              {scope.keys!.map((k) => (
-                <li key={k.name}>
-                  <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12.5px] font-semibold">{k.name}</code>
-                  {k.purpose && <span className="text-muted"> {k.purpose}</span>}
-                  {!k.required && <span className="text-faint"> (optional)</span>}
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs text-faint">
-              Suggestions only: add the keys you want under Keys & settings in the sidebar, with any names you like,
-              never in the chat. Values are stored encrypted and Gagesite&apos;s AI never sees them.
-            </p>
-          </>
-        )),
+        sub(
+          "features-keys",
+          "Keys the website may need",
+          scope.keys?.length,
+          () => (
+            <>
+              <ul className="space-y-1.5">
+                {scope.keys!.map((k) => (
+                  <li key={k.name}>
+                    <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12.5px] font-semibold">
+                      {k.name}
+                    </code>
+                    {k.purpose && (
+                      <span className="text-muted"> {k.purpose}</span>
+                    )}
+                    {!k.required && (
+                      <span className="text-faint"> (optional)</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-faint">
+                Suggestions only: add the keys you want under Keys & settings in
+                the sidebar, with any names you like, never in the chat. Values
+                are stored encrypted and Gagesite&apos;s AI never sees them.
+              </p>
+            </>
+          ),
+        ),
       ],
     },
     {
       id: "how-it-works",
       title: "How the site works",
       subs: [
-        sub("how-permissions", "Who can do what", scope.permissions?.length && scope.roles.length, () => (
-          <Table
-            head={["Action", ...scope.roles.map((r) => r.name)]}
-            rows={scope.permissions!.map((p) => [
-              p.action,
-              ...scope.roles.map((r) => (p.roles.some((x) => x.toLowerCase() === r.name.toLowerCase()) ? "Yes" : "")),
-            ])}
-            center
-          />
-        )),
+        sub(
+          "how-permissions",
+          "Who can do what",
+          scope.permissions?.length && scope.roles.length,
+          () => (
+            <Table
+              head={["Action", ...scope.roles.map((r) => r.name)]}
+              rows={scope.permissions!.map((p) => [
+                p.action,
+                ...scope.roles.map((r) =>
+                  p.roles.some((x) => x.toLowerCase() === r.name.toLowerCase())
+                    ? "Yes"
+                    : "",
+                ),
+              ])}
+              center
+            />
+          ),
+        ),
         ...(scope.flows ?? []).map((flow) =>
           sub(`flow-${flow.id}`, `${flow.name} (${flow.role})`, true, () => (
             <>
               {flow.goal && <p className="text-muted">{flow.goal}</p>}
               <FlowSwimlane flow={flow} />
               <details className="group">
-                <summary className="cursor-pointer text-xs font-medium text-faint hover:text-ink">Step by step</summary>
+                <summary className="cursor-pointer text-xs font-medium text-faint hover:text-ink">
+                  Step by step
+                </summary>
                 <ol className="mt-2 list-decimal space-y-1.5 pl-5 marker:text-faint">
                   {flow.steps.map((step, i) => (
                     <li key={i}>
                       <strong className="font-semibold">{step.actor}</strong>
-                      {step.page && <span className="text-muted"> on {step.page}</span>}: {step.action}
+                      {step.page && (
+                        <span className="text-muted"> on {step.page}</span>
+                      )}
+                      : {step.action}
                       {step.result && (
                         <span className="text-muted">
                           {" "}
-                          <ArrowRight size={12} className="inline align-[-1px] text-faint" /> {step.result}
+                          <ArrowRight
+                            size={12}
+                            className="inline align-[-1px] text-faint"
+                          />{" "}
+                          {step.result}
                         </span>
                       )}
                     </li>
@@ -681,7 +851,9 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
               </details>
               {flow.problems.length > 0 && (
                 <>
-                  <p className="text-xs font-medium text-faint">If something goes wrong:</p>
+                  <p className="text-xs font-medium text-faint">
+                    If something goes wrong:
+                  </p>
                   <ul className="list-disc space-y-1 pl-5 marker:text-line-strong">
                     {flow.problems.map((p) => (
                       <li key={p.when}>
@@ -697,7 +869,11 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
         sub("how-states", "How things change", scope.lifecycles?.length, () => (
           <>
             {scope.lifecycles!.map((cycle) => (
-              <div key={cycle.thing} id={lifecycleAnchor(cycle.thing)} className="scroll-mt-6 space-y-2">
+              <div
+                key={cycle.thing}
+                id={lifecycleAnchor(cycle.thing)}
+                className="scroll-mt-6 space-y-2"
+              >
                 <p>
                   <strong className="font-semibold">{cycle.thing}</strong>
                 </p>
@@ -710,7 +886,12 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
                     <ul className="mt-2 list-disc pl-5 marker:text-line-strong">
                       {cycle.changes.map((c, i) => (
                         <li key={i}>
-                          {c.from || "start"} <ArrowRight size={12} className="inline align-[-1px] text-faint" /> {c.to}
+                          {c.from || "start"}{" "}
+                          <ArrowRight
+                            size={12}
+                            className="inline align-[-1px] text-faint"
+                          />{" "}
+                          {c.to}
                           <span className="text-muted">: {c.trigger}</span>
                         </li>
                       ))}
@@ -721,84 +902,143 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
             ))}
           </>
         )),
-        sub("how-messages", "Messages the site sends", scope.notifications?.length, () => (
-          <Table
-            head={["Message", "To", "When", "How"]}
-            rows={scope.notifications!.map((n) => [n.name, n.to, n.when, CHANNELS[n.channel] ?? n.channel])}
-          />
-        )),
+        sub(
+          "how-messages",
+          "Messages the site sends",
+          scope.notifications?.length,
+          () => (
+            <Table
+              head={["Message", "To", "When", "How"]}
+              rows={scope.notifications!.map((n) => [
+                n.name,
+                n.to,
+                n.when,
+                CHANNELS[n.channel] ?? n.channel,
+              ])}
+            />
+          ),
+        ),
       ],
     },
     {
       id: "business",
       title: "Business case",
       subs: [
-        sub("business-value", "Why customers pick you", value?.proposition, () => <p>{value!.proposition}</p>),
-        sub("business-helps", "How the site helps", value?.revenue.length || value?.saves.length, () => (
-          <>
-            {value!.revenue.length > 0 && (
-              <>
-                <p className="text-xs font-medium text-faint">Brings in money:</p>
-                <Bullets items={value!.revenue} />
-              </>
-            )}
-            {value!.saves.length > 0 && (
-              <>
-                <p className="text-xs font-medium text-faint">Saves you:</p>
-                <Bullets items={value!.saves} />
-              </>
-            )}
-          </>
-        )),
-        sub("business-worth", "Is it worth it?", economics?.expected_return || economics?.costs.length, () => (
-          <>
-            {economics!.expected_return && (
-              <p>
-                <strong className="font-semibold">Expected:</strong> {economics!.expected_return}
-              </p>
-            )}
-            {economics!.payback && <p>{economics!.payback}</p>}
-            {economics!.costs.length > 0 && (
-              <Table
-                head={["Cost", "Amount", "How often"]}
-                rows={economics!.costs.map((c) => [
-                  c.item,
-                  c.amount,
-                  c.period === "once" ? "One time" : `Every ${c.period}`,
-                ])}
-              />
-            )}
-            {economics!.basis && <p className="text-xs text-faint">An estimate based on: {economics!.basis}</p>}
-          </>
-        )),
-        sub("business-discovery", "How customers find you", brief.discovery?.length, () => (
-          <Table head={["Where", "What to do"]} rows={brief.discovery!.map((d) => [d.channel, d.action])} />
-        )),
-        sub("business-launch", "From approval to launch", launch?.timeline.length, () => (
-          <Table head={["When", "Step", "Who"]} rows={launch!.timeline.map((m) => [m.when, m.step, m.who])} />
-        )),
+        sub(
+          "business-value",
+          "Why customers pick you",
+          value?.proposition,
+          () => <p>{value!.proposition}</p>,
+        ),
+        sub(
+          "business-helps",
+          "How the site helps",
+          value?.revenue.length || value?.saves.length,
+          () => (
+            <>
+              {value!.revenue.length > 0 && (
+                <>
+                  <p className="text-xs font-medium text-faint">
+                    Brings in money:
+                  </p>
+                  <Bullets items={value!.revenue} />
+                </>
+              )}
+              {value!.saves.length > 0 && (
+                <>
+                  <p className="text-xs font-medium text-faint">Saves you:</p>
+                  <Bullets items={value!.saves} />
+                </>
+              )}
+            </>
+          ),
+        ),
+        sub(
+          "business-worth",
+          "Is it worth it?",
+          economics?.expected_return || economics?.costs.length,
+          () => (
+            <>
+              {economics!.expected_return && (
+                <p>
+                  <strong className="font-semibold">Expected:</strong>{" "}
+                  {economics!.expected_return}
+                </p>
+              )}
+              {economics!.payback && <p>{economics!.payback}</p>}
+              {economics!.costs.length > 0 && (
+                <Table
+                  head={["Cost", "Amount", "How often"]}
+                  rows={economics!.costs.map((c) => [
+                    c.item,
+                    c.amount,
+                    c.period === "once" ? "One time" : `Every ${c.period}`,
+                  ])}
+                />
+              )}
+              {economics!.basis && (
+                <p className="text-xs text-faint">
+                  An estimate based on: {economics!.basis}
+                </p>
+              )}
+            </>
+          ),
+        ),
+        sub(
+          "business-discovery",
+          "How customers find you",
+          brief.discovery?.length,
+          () => (
+            <Table
+              head={["Where", "What to do"]}
+              rows={brief.discovery!.map((d) => [d.channel, d.action])}
+            />
+          ),
+        ),
+        sub(
+          "business-launch",
+          "From approval to launch",
+          launch?.timeline.length,
+          () => (
+            <Table
+              head={["When", "Step", "Who"]}
+              rows={launch!.timeline.map((m) => [m.when, m.step, m.who])}
+            />
+          ),
+        ),
         sub(
           "business-running",
           "Running the site",
-          launch?.owner_time.length || running?.monthly_cost || running?.updates.length,
+          launch?.owner_time.length ||
+            running?.monthly_cost ||
+            running?.updates.length,
           () => (
             <>
               {running?.monthly_cost && (
                 <p>
-                  <strong className="font-semibold">Monthly cost:</strong> {running.monthly_cost}
+                  <strong className="font-semibold">Monthly cost:</strong>{" "}
+                  {running.monthly_cost}
                 </p>
               )}
               {(launch?.owner_time.length ?? 0) > 0 && (
-                <Table head={["Your regular task", "Time"]} rows={launch!.owner_time.map((t) => [t.task, t.time])} />
+                <Table
+                  head={["Your regular task", "Time"]}
+                  rows={launch!.owner_time.map((t) => [t.task, t.time])}
+                />
               )}
-              {(running?.updates.length ?? 0) > 0 && <Bullets items={running!.updates} />}
+              {(running?.updates.length ?? 0) > 0 && (
+                <Bullets items={running!.updates} />
+              )}
               {running?.notes && <p className="text-muted">{running.notes}</p>}
             </>
           ),
         ),
-        sub("business-competitors", "Competitors and sites you like", value?.competitors.length, () => (
-          <Bullets items={value!.competitors} />
-        )),
+        sub(
+          "business-competitors",
+          "Competitors and sites you like",
+          value?.competitors.length,
+          () => <Bullets items={value!.competitors} />,
+        ),
       ],
     },
     {
@@ -834,49 +1074,67 @@ function buildDocument(scope: Scope, editing?: DetailsEditing): Sec[] {
                 ))}
               </ol>
               <p className="text-xs text-faint">
-                Answer in the chat whenever you like. None of these stop you approving the plan.
+                Answer in the chat whenever you like. None of these stop you
+                approving the plan.
               </p>
             </>
           ) : (
             <p className="text-muted">Nothing left to decide.</p>
           ),
         ),
-        sub("your-send", "Content to send", scope.content_checklist?.length, () => (
-          <>
-            <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-              {(["needed", "placeholder", "provided"] as const).map((s) => (
-                <span key={s} className="flex items-center gap-1.5">
-                  <span className={`size-1.5 rounded-full ${STATUS[s].dot}`} />
-                  <span className="font-medium text-ink">{STATUS[s].label}</span>: {STATUS[s].hint}
-                </span>
-              ))}
-            </p>
-            <ul className="divide-y divide-line border-y border-line">
-              {scope
-                .content_checklist!.map((c, index) => ({
-                  c,
-                  index,
-                  state: effectiveStatus(c, scope.details),
-                }))
-                .sort((a, b) => STATUS[a.state].order - STATUS[b.state].order)
-                .map(({ c, index }) => (
-                  <ContentRow
-                    key={`${c.item}-${index}`}
-                    item={c}
-                    index={index}
-                    details={scope.details}
-                    editing={editing}
-                  />
+        sub(
+          "your-send",
+          "Content to send",
+          scope.content_checklist?.length,
+          () => (
+            <>
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                {(["needed", "placeholder", "provided"] as const).map((s) => (
+                  <span key={s} className="flex items-center gap-1.5">
+                    <span
+                      className={`size-1.5 rounded-full ${STATUS[s].dot}`}
+                    />
+                    <span className="font-medium text-ink">
+                      {STATUS[s].label}
+                    </span>
+                    : {STATUS[s].hint}
+                  </span>
                 ))}
-            </ul>
-          </>
-        )),
-        sub("your-assumptions", "Choices Gagesite made for you", scope.assumptions.length, () => (
-          <>
-            <Bullets items={scope.assumptions} muted />
-            <p className="text-xs text-faint">Easy to change: just say so in the chat.</p>
-          </>
-        )),
+              </p>
+              <ul className="divide-y divide-line border-y border-line">
+                {scope
+                  .content_checklist!.map((c, index) => ({
+                    c,
+                    index,
+                    state: effectiveStatus(c, scope.details),
+                  }))
+                  .sort((a, b) => STATUS[a.state].order - STATUS[b.state].order)
+                  .map(({ c, index }) => (
+                    <ContentRow
+                      key={`${c.item}-${index}`}
+                      item={c}
+                      index={index}
+                      details={scope.details}
+                      editing={editing}
+                    />
+                  ))}
+              </ul>
+            </>
+          ),
+        ),
+        sub(
+          "your-assumptions",
+          "Choices Gagesite made for you",
+          scope.assumptions.length,
+          () => (
+            <>
+              <Bullets items={scope.assumptions} muted />
+              <p className="text-xs text-faint">
+                Easy to change: just say so in the chat.
+              </p>
+            </>
+          ),
+        ),
       ],
     },
   ];
@@ -966,27 +1224,44 @@ function linkedDetails(item: ContentItem, details?: ScopeDetails) {
     l.fields.flatMap((field, i) => {
       if (details?.not_needed.includes(field)) return [];
       const value = details?.[field];
-      return (Array.isArray(value) ? value.length : value) ? [] : [l.names[i] ?? l.names[0]];
+      return (Array.isArray(value) ? value.length : value)
+        ? []
+        : [l.names[i] ?? l.names[0]];
     }),
   );
   return { linked: links.length > 0, missing };
 }
 
 /** What really stands: details given in 5.1, uploads and chosen samples beat the plan's own label. */
-function effectiveStatus(item: ContentItem, details?: ScopeDetails): ContentItem["status"] {
+function effectiveStatus(
+  item: ContentItem,
+  details?: ScopeDetails,
+): ContentItem["status"] {
   const { linked, missing } = linkedDetails(item, details);
-  if (linked) return missing.length === 0 ? "provided" : item.status === "placeholder" ? "placeholder" : "needed";
+  if (linked)
+    return missing.length === 0
+      ? "provided"
+      : item.status === "placeholder"
+        ? "placeholder"
+        : "needed";
   if (item.kind === "image") {
     if (item.files.length) return "provided";
     const isLogo = /logo|로고/i.test(item.item);
     // A photo item only counts as "sample" once sample photos have actually been picked.
-    if (item.status === "placeholder" && !isLogo && !item.samples.length) return "needed";
+    if (item.status === "placeholder" && !isLogo && !item.samples.length)
+      return "needed";
   }
   return item.status;
 }
 
 /** The real details that go on the website. Claude fills them from the chat; the owner can also type them in. */
-function DetailsBlock({ details, editing }: { details: ScopeDetails; editing: DetailsEditing }) {
+function DetailsBlock({
+  details,
+  editing,
+}: {
+  details: ScopeDetails;
+  editing: DetailsEditing;
+}) {
   if (editing.open && editing.onSave) {
     const save = editing.onSave;
     return (
@@ -1025,19 +1300,22 @@ const DETAIL_FIELDS: { key: keyof ScopeDetails; label: string }[] = [
 ];
 
 function detailText(details: ScopeDetails, key: keyof ScopeDetails): string {
-  if (key === "hours") return details.hours.map((h) => `${h.days} ${h.time}`.trim()).join("; ");
-  if (key === "links") return details.links.map((l) => `${l.name}: ${l.url}`).join("; ");
+  if (key === "hours")
+    return details.hours.map((h) => `${h.days} ${h.time}`.trim()).join("; ");
+  if (key === "links")
+    return details.links.map((l) => `${l.name}: ${l.url}`).join("; ");
   const value = details[key];
   return typeof value === "string" ? value : "";
 }
 
 function DetailsTable({ details }: { details: ScopeDetails }) {
-  const skipped = DETAIL_FIELDS.filter((f) => details.not_needed.includes(f.key));
+  const skipped = DETAIL_FIELDS.filter((f) =>
+    details.not_needed.includes(f.key),
+  );
   const rows: [string, React.ReactNode][] = [
-    ...DETAIL_FIELDS.filter((f) => !details.not_needed.includes(f.key)).map((f): [string, React.ReactNode] => [
-      f.label,
-      detailText(details, f.key),
-    ]),
+    ...DETAIL_FIELDS.filter((f) => !details.not_needed.includes(f.key)).map(
+      (f): [string, React.ReactNode] => [f.label, detailText(details, f.key)],
+    ),
     // Business-specific details (shipping fee, stylists...), with what exactly is needed.
     ...details.other
       .filter((o) => o.label)
@@ -1048,7 +1326,11 @@ function DetailsTable({ details }: { details: ScopeDetails }) {
         ) : (
           <span>
             <span className="text-faint">Add later</span>
-            {o.hint && <span className="block text-xs leading-5 text-faint">{o.hint}</span>}
+            {o.hint && (
+              <span className="block text-xs leading-5 text-faint">
+                {o.hint}
+              </span>
+            )}
           </span>
         ),
       ]),
@@ -1058,8 +1340,9 @@ function DetailsTable({ details }: { details: ScopeDetails }) {
       <Facts rows={rows} showEmpty />
       {skipped.length > 0 && (
         <p className="text-xs text-faint">
-          Not needed for this site: {skipped.map((f) => f.label.toLowerCase()).join(", ")}. Need one after all? Say so
-          in the chat.
+          Not needed for this site:{" "}
+          {skipped.map((f) => f.label.toLowerCase()).join(", ")}. Need one after
+          all? Say so in the chat.
         </p>
       )}
     </>
@@ -1093,8 +1376,12 @@ function DetailsForm({
         phone: t(d.phone),
         email: t(d.email),
         address: t(d.address),
-        hours: d.hours.map((h) => ({ days: t(h.days), time: t(h.time) })).filter((h) => h.days || h.time),
-        links: d.links.map((l) => ({ name: t(l.name), url: t(l.url) })).filter((l) => l.name || l.url),
+        hours: d.hours
+          .map((h) => ({ days: t(h.days), time: t(h.time) }))
+          .filter((h) => h.days || h.time),
+        links: d.links
+          .map((l) => ({ name: t(l.name), url: t(l.url) }))
+          .filter((l) => l.name || l.url),
         legal_name: t(d.legal_name),
         representative: t(d.representative),
         registration_number: t(d.registration_number),
@@ -1113,7 +1400,13 @@ function DetailsForm({
   // Fields that don't apply to this business are left out of the form.
   const shown = (key: keyof ScopeDetails) => !d.not_needed.includes(key);
   const text = (
-    key: "phone" | "email" | "legal_name" | "representative" | "registration_number" | "domain",
+    key:
+      | "phone"
+      | "email"
+      | "legal_name"
+      | "representative"
+      | "registration_number"
+      | "domain",
     label: string,
     placeholder: string,
     type = "text",
@@ -1211,7 +1504,11 @@ function DetailsForm({
           </Field>
         )}
         {text("legal_name", "Business name", "Registered business name")}
-        {text("representative", "Representative", "Name of the owner or representative")}
+        {text(
+          "representative",
+          "Representative",
+          "Name of the owner or representative",
+        )}
         {text("registration_number", "Registration no.", "123-45-67890")}
         {text("domain", "Web address", "beanthere.kr")}
         {d.other.map((o, i) =>
@@ -1223,7 +1520,9 @@ function DetailsForm({
                 onChange={(e) =>
                   set(
                     "other",
-                    d.other.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
+                    d.other.map((x, j) =>
+                      j === i ? { ...x, value: e.target.value } : x,
+                    ),
                   )
                 }
                 placeholder={o.hint}
@@ -1235,7 +1534,9 @@ function DetailsForm({
         <Field label="Other">
           <Rows
             items={d.other.filter((o) => !o.hint)}
-            onChange={(mine) => set("other", [...d.other.filter((o) => o.hint), ...mine])}
+            onChange={(mine) =>
+              set("other", [...d.other.filter((o) => o.hint), ...mine])
+            }
             blank={{ label: "", value: "", hint: "" }}
             addLabel="Add another detail"
             render={(o, update) => (
@@ -1260,7 +1561,11 @@ function DetailsForm({
         </Field>
       </div>
 
-      {error && <p className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-xs text-danger">{error}</p>}
+      {error && (
+        <p className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-xs text-danger">
+          {error}
+        </p>
+      )}
       <div className="mt-4 flex justify-end gap-2">
         <button
           type="button"
@@ -1280,7 +1585,15 @@ function DetailsForm({
   );
 }
 
-function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="grid gap-x-4 gap-y-1.5 py-2.5 @md:grid-cols-[8.5rem_minmax(0,1fr)]">
       <label htmlFor={htmlFor} className="pt-1.5 text-sm text-muted">
@@ -1308,8 +1621,13 @@ function Rows<T>({
   return (
     <div className="space-y-2">
       {items.map((item, i) => (
-        <div key={i} className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] items-center gap-2">
-          {render(item, (next) => onChange(items.map((x, j) => (j === i ? next : x))))}
+        <div
+          key={i}
+          className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] items-center gap-2"
+        >
+          {render(item, (next) =>
+            onChange(items.map((x, j) => (j === i ? next : x))),
+          )}
           <button
             type="button"
             onClick={() => onChange(items.filter((_, j) => j !== i))}
@@ -1355,8 +1673,12 @@ function ContentRow({
   const { linked, missing } = linkedDetails(item, details);
   const isImage = item.kind === "image" && !linked;
   const isLogo = /logo|로고/i.test(item.item);
-  const canFillIn = linked && state !== "provided" && !!editing?.editable && !!editing.onSave;
-  const canEdit = !!editing?.editable && !!editing.onUploadContent && !!editing.onChooseContent;
+  const canFillIn =
+    linked && state !== "provided" && !!editing?.editable && !!editing.onSave;
+  const canEdit =
+    !!editing?.editable &&
+    !!editing.onUploadContent &&
+    !!editing.onChooseContent;
 
   async function run(kind: "upload" | "sample", action: () => Promise<void>) {
     setBusy(kind);
@@ -1372,7 +1694,9 @@ function ContentRow({
 
   const uploads = item.files.map((file) => ({
     key: file,
-    src: editing?.projectId ? api.previewUrl(editing.projectId, `brand/${file}`) : "",
+    src: editing?.projectId
+      ? api.previewUrl(editing.projectId, `brand/${file}`)
+      : "",
     credit: "",
   }));
   const usingSamples = isImage && !isLogo && state === "placeholder";
@@ -1390,12 +1714,18 @@ function ContentRow({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-semibold leading-6">{item.item}</p>
-          {item.detail && <p className="text-[13px] leading-6 text-muted">{item.detail}</p>}
+          {item.detail && (
+            <p className="text-[13px] leading-6 text-muted">{item.detail}</p>
+          )}
           {linked && state !== "provided" && missing.length > 0 && (
-            <p className="text-xs leading-6 text-faint">Still missing in 5.1: {missing.join(", ")}</p>
+            <p className="text-xs leading-6 text-faint">
+              Still missing in 5.1: {missing.join(", ")}
+            </p>
           )}
         </div>
-        <span className={`flex shrink-0 items-center gap-1.5 pt-1 text-xs ${status.className}`}>
+        <span
+          className={`flex shrink-0 items-center gap-1.5 pt-1 text-xs ${status.className}`}
+        >
           <span className={`size-1.5 rounded-full ${status.dot}`} />
           {isImage && state === "placeholder"
             ? isLogo
@@ -1412,7 +1742,10 @@ function ContentRow({
             editing!.setOpen(true);
             // Scroll once the form has opened (it changes the page height under the scroll).
             setTimeout(
-              () => document.getElementById("your-details")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+              () =>
+                document
+                  .getElementById("your-details")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" }),
               80,
             );
           }}
@@ -1435,7 +1768,12 @@ function ContentRow({
                 >
                   {t.src && (
                     // eslint-disable-next-line @next/next/no-img-element -- previews from the backend or a sample service
-                    <img src={t.src} alt="" loading="lazy" className="size-full object-cover" />
+                    <img
+                      src={t.src}
+                      alt=""
+                      loading="lazy"
+                      className="size-full object-cover"
+                    />
                   )}
                   {!uploads.length && (
                     <span className="absolute inset-x-0 bottom-0 bg-ink/60 px-1 py-px text-center text-[9px] font-medium text-white">
@@ -1458,7 +1796,10 @@ function ContentRow({
                 onChange={(e) => {
                   const files = [...(e.target.files ?? [])];
                   e.target.value = "";
-                  if (files.length) run("upload", () => editing!.onUploadContent!(index, item.item, files));
+                  if (files.length)
+                    run("upload", () =>
+                      editing!.onUploadContent!(index, item.item, files),
+                    );
                 }}
               />
               <button
@@ -1482,7 +1823,11 @@ function ContentRow({
                 (item.status === "placeholder" && (isLogo || usingSamples) ? (
                   <button
                     type="button"
-                    onClick={() => run("sample", () => editing!.onChooseContent!(index, item.item, "needed"))}
+                    onClick={() =>
+                      run("sample", () =>
+                        editing!.onChooseContent!(index, item.item, "needed"),
+                      )
+                    }
                     disabled={busy !== null}
                     className="rounded-lg px-2 py-1 text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
                   >
@@ -1491,7 +1836,15 @@ function ContentRow({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => run("sample", () => editing!.onChooseContent!(index, item.item, "placeholder"))}
+                    onClick={() =>
+                      run("sample", () =>
+                        editing!.onChooseContent!(
+                          index,
+                          item.item,
+                          "placeholder",
+                        ),
+                      )
+                    }
                     disabled={busy !== null}
                     className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-accent-ink transition hover:bg-accent-soft disabled:opacity-50"
                   >
@@ -1507,8 +1860,10 @@ function ContentRow({
           )}
           {usingSamples && (
             <p className="text-xs text-faint">
-              Free sample photos stand in for yours in the design, marked “Sample”. Upload your own any time.
-              {item.samples[0]?.credit && ` Photos: ${[...new Set(item.samples.map((s) => s.credit))].join("; ")}.`}
+              Free sample photos stand in for yours in the design, marked
+              “Sample”. Upload your own any time.
+              {item.samples[0]?.credit &&
+                ` Photos: ${[...new Set(item.samples.map((s) => s.credit))].join("; ")}.`}
             </p>
           )}
           {error && <p className="text-xs text-danger">{error}</p>}
@@ -1522,7 +1877,9 @@ function ContentRow({
 
 function Bullets({ items, muted }: { items: string[]; muted?: boolean }) {
   return (
-    <ul className={`list-disc space-y-1 pl-5 marker:text-line-strong ${muted ? "text-muted" : ""}`}>
+    <ul
+      className={`list-disc space-y-1 pl-5 marker:text-line-strong ${muted ? "text-muted" : ""}`}
+    >
       {items.map((item) => (
         <li key={item}>{item}</li>
       ))}
@@ -1531,14 +1888,25 @@ function Bullets({ items, muted }: { items: string[]; muted?: boolean }) {
 }
 
 /** Label and value rows. Empty values are skipped, or flagged when `showEmpty` is set. */
-function Facts({ rows, showEmpty }: { rows: [string, React.ReactNode][]; showEmpty?: boolean }) {
+function Facts({
+  rows,
+  showEmpty,
+}: {
+  rows: [string, React.ReactNode][];
+  showEmpty?: boolean;
+}) {
   const shown = rows.filter(([, v]) => v || showEmpty);
   return (
     <dl className="divide-y divide-line border-y border-line">
       {shown.map(([label, value]) => (
-        <div key={label} className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-x-4 py-2">
+        <div
+          key={label}
+          className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-x-4 py-2"
+        >
           <dt className="text-muted">{label}</dt>
-          <dd className="min-w-0 break-words">{value || <span className="text-faint">Add later</span>}</dd>
+          <dd className="min-w-0 break-words">
+            {value || <span className="text-faint">Add later</span>}
+          </dd>
         </div>
       ))}
     </dl>
@@ -1599,8 +1967,14 @@ export function Overview({ scope }: { scope: Scope }) {
   const overview = buildDocument(scope).find((s) => s.id === "overview");
   return (
     <article className="text-sm">
-      <h3 className="font-display text-[1.6rem] font-bold leading-tight tracking-tight">{scope.business.name}</h3>
-      {scope.business.description && <p className="mt-1.5 leading-7 text-muted">{scope.business.description}</p>}
+      <h3 className="font-display text-[1.6rem] font-bold leading-tight tracking-tight">
+        {scope.business.name}
+      </h3>
+      {scope.business.description && (
+        <p className="mt-1.5 leading-7 text-muted">
+          {scope.business.description}
+        </p>
+      )}
       {overview?.subs.map((sub, j) => (
         <div key={sub.id} className="pt-5">
           <h4 className="text-[15px] font-semibold">

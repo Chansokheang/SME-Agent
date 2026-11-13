@@ -1,6 +1,11 @@
 "use client";
 
-import { CircleNotch, FileArrowUp, TreeStructure, X } from "@phosphor-icons/react";
+import {
+  CircleNotch,
+  FileArrowUp,
+  TreeStructure,
+  X,
+} from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import DataModelPanel from "@/components/database/DataModelPanel";
 import DataStart, { type Choice } from "@/components/database/DataStart";
@@ -8,6 +13,7 @@ import ChatColumn from "@/components/stage/ChatColumn";
 import ConfirmDialog from "@/components/stage/ConfirmDialog";
 import { StartOverTrigger } from "@/components/stage/StartOverButton";
 import StageLayout from "@/components/stage/StageLayout";
+import LandingSkipCard from "@/components/LandingSkipCard";
 import StartPanel, { ChatGreeting } from "@/components/stage/StartPanel";
 import {
   api,
@@ -25,7 +31,11 @@ const STAGE = "02-database";
 function describeUploads(uploads: FileProfile[]) {
   return uploads
     .filter((u) => !u.error)
-    .map((u) => (u.sheets.length ? `${u.file} (${u.sheets.map((s) => s.name).join(", ")})` : u.file))
+    .map((u) =>
+      u.sheets.length
+        ? `${u.file} (${u.sheets.map((s) => s.name).join(", ")})`
+        : u.file,
+    )
     .join("; ");
 }
 
@@ -87,7 +97,10 @@ export default function DatabaseStage({
   // A skipped step (no database) has a design but no conversation: show it, not the choices.
   const skipped = artifact?.data?.mode === "none" && run.messages.length === 0;
   // Stopped before anything was designed: the start choices come back (uploads are kept).
-  const started = run.running || skipped || (run.messages.length > 0 && (artifact === null || artifact.exists));
+  const started =
+    run.running ||
+    skipped ||
+    (run.messages.length > 0 && (artifact === null || artifact.exists));
 
   async function upload(files: File[]) {
     if (!files.length) return;
@@ -98,7 +111,10 @@ export default function DatabaseStage({
       for (const file of files) latest = await api.uploadFile(projectId, file);
       setUploads(latest);
       loadArtifact();
-      if (started) setUnannounced((names) => [...new Set([...names, ...files.map((f) => f.name)])]);
+      if (started)
+        setUnannounced((names) => [
+          ...new Set([...names, ...files.map((f) => f.name)]),
+        ]);
     } catch (e) {
       setUploadError((e as Error).message);
     } finally {
@@ -159,20 +175,28 @@ export default function DatabaseStage({
 
   async function announce() {
     const names = unannounced.join(", ");
-    if (await run.send(`I added ${names}. Please update the design to use this data.`)) setUnannounced([]);
+    if (
+      await run.send(
+        `I added ${names}. Please update the design to use this data.`,
+      )
+    )
+      setUnannounced([]);
   }
 
   async function act(action: "approve" | "reopen") {
     setBusy(true);
     run.setError(null);
     try {
-      await (action === "approve" ? api.approve(projectId, STAGE) : api.reopen(projectId, STAGE));
+      await (action === "approve"
+        ? api.approve(projectId, STAGE)
+        : api.reopen(projectId, STAGE));
       // The last step of this stage: pick where the website's data will live, so stay here until
       // it's connected. A simple site without a database has nothing to connect: go on.
       const needsConnecting = !connection && artifact?.data?.mode !== "none";
       if (action === "approve" && !needsConnecting && onApproved) onApproved();
       else onStageChange();
-      if (action === "approve" && needsConnecting) setConnectFocus((n) => n + 1);
+      if (action === "approve" && needsConnecting)
+        setConnectFocus((n) => n + 1);
     } catch (e) {
       run.setError((e as Error).message);
     } finally {
@@ -190,7 +214,11 @@ export default function DatabaseStage({
         title="Add an Excel, CSV or SQL file"
         className="grid size-8 place-items-center rounded-lg text-muted transition hover:bg-accent-soft hover:text-accent disabled:opacity-40"
       >
-        {uploading ? <CircleNotch size={18} className="animate-spin" /> : <FileArrowUp size={18} />}
+        {uploading ? (
+          <CircleNotch size={18} className="animate-spin" />
+        ) : (
+          <FileArrowUp size={18} />
+        )}
       </button>
       <input
         ref={attachRef}
@@ -209,7 +237,11 @@ export default function DatabaseStage({
   const notice =
     started && (unannounced.length > 0 || uploadError) ? (
       <div className="mb-2 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-4 py-2.5 text-sm">
-        <FileArrowUp size={18} weight="duotone" className="shrink-0 text-accent" />
+        <FileArrowUp
+          size={18}
+          weight="duotone"
+          className="shrink-0 text-accent"
+        />
         <span className="min-w-0 flex-1 truncate text-accent-ink">
           {uploadError ?? `Added ${unannounced.join(", ")}`}
         </span>
@@ -273,7 +305,10 @@ export default function DatabaseStage({
             composerAccessory={attach}
             headerAction={
               started || approved ? (
-                <StartOverTrigger onClick={() => setConfirmReset(true)} disabled={busy} />
+                <StartOverTrigger
+                  onClick={() => setConfirmReset(true)}
+                  disabled={busy}
+                />
               ) : null
             }
             notice={notice}
@@ -281,17 +316,24 @@ export default function DatabaseStage({
               skipped ? (
                 <ChatGreeting title="You skipped this step: no database.">
                   <p>
-                    Your website keeps its content in its own files, and forms arrive by email. The right side shows
-                    what that means.
+                    Your website keeps its content in its own files, and forms
+                    arrive by email. The right side shows what that means.
                   </p>
-                  <p>To add a database after all, reopen this step and choose Start over.</p>
+                  <p>
+                    To add a database after all, reopen this step and choose
+                    Start over.
+                  </p>
                 </ChatGreeting>
               ) : (
                 <ChatGreeting title="Let's decide what information your website keeps.">
-                  <p>Pick how to start on the right. Most people start from their plan; nothing to upload.</p>
                   <p>
-                    Or just tell me in your own words, for example &ldquo;My bookings are in an Excel file&rdquo; or
-                    &ldquo;I don&apos;t need a database&rdquo;.
+                    Pick how to start on the right. Most people start from their
+                    plan; nothing to upload.
+                  </p>
+                  <p>
+                    Or just tell me in your own words, for example &ldquo;My
+                    bookings are in an Excel file&rdquo; or &ldquo;I don&apos;t
+                    need a database&rdquo;.
                   </p>
                 </ChatGreeting>
               )
@@ -318,6 +360,11 @@ export default function DatabaseStage({
                   setUploads(profile);
                   loadArtifact();
                 }}
+              />
+              <LandingSkipCard
+                projectId={projectId}
+                disabled={busy}
+                className="mt-8"
               />
             </StartPanel>
           ) : (

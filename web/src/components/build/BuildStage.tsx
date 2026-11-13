@@ -215,12 +215,32 @@ export default function BuildStage({
 
   // Stopped before anything was written: the start panel comes back.
   const started = run.running || !!artifact?.exists || !!team || (run.messages.length > 0 && artifact === null)
-    || (setup?.setup === "landing" && !!storyboard?.storyboard);
+    || (setup?.setup === "landing" && (!!storyboard?.storyboard || !!storyboard?.directions));
 
   // A landing page is storyboarded first (the Motion Director), then built from the approved storyboard.
   const storyboardPhase =
     setup?.setup === "landing" && !!storyboard && !storyboard.approved && !storyboard.build_started && !approved
-    && (run.running || !!storyboard.storyboard || run.messages.length > 0);
+    && (run.running || !!storyboard.storyboard || !!storyboard.directions || run.messages.length > 0);
+
+  // The owner picks one of the Director's looks; the storyboard is then made in it.
+  async function chooseDirection(id: string, note: string) {
+    setBusy(true);
+    run.setError(null);
+    try {
+      const next = await api.chooseDirection(projectId, id, note);
+      setStoryboard(next);
+      const picked = next.directions?.directions.find((d) => d.id === id);
+      await run.send(
+        `I choose direction ${id}${picked ? ` (${picked.name})` : ""}.` +
+          (note.trim() ? ` ${note.trim()}` : "") +
+          " Please write the scroll storyboard in this direction.",
+      );
+    } catch (e) {
+      run.setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function buildFromStoryboard() {
     setBusy(true);
@@ -397,6 +417,8 @@ export default function BuildStage({
                 {storyboardPhase ? (
                   <StoryboardPanel
                     board={storyboard?.storyboard ?? null}
+                    directions={storyboard?.directions ?? null}
+                    onChoose={chooseDirection}
                     running={run.running}
                     busy={busy}
                     onBuild={buildFromStoryboard}

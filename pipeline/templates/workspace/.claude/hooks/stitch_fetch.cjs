@@ -41,9 +41,28 @@ async function main() {
     fail("Couldn't download it (no answer). Try again, or ask Stitch for the screen again to get a fresh link.");
   }
   if (!res.ok) fail(`The download answered ${res.status}. Links expire: ask Stitch for the screen again to get a fresh one.`);
-  const buffer = Buffer.from(await res.arrayBuffer());
+  let buffer = Buffer.from(await res.arrayBuffer());
+  let type = (res.headers.get("content-type") || "").toLowerCase();
+  // Stitch's links often answer with a wrapper: {"dataString": <the page, or the picture in base64>,
+  // "imageMetadata": {"mimeType": "png"}}. Keep what is inside, not the wrapper.
+  if (type.includes("json") || buffer.subarray(0, 1).toString() === "{") {
+    try {
+      const data = JSON.parse(buffer.toString("utf-8"));
+      if (data && typeof data.dataString === "string") {
+        const mime = String((data.imageMetadata && data.imageMetadata.mimeType) || "").toLowerCase();
+        if (mime || !data.dataString.trimStart().startsWith("<")) {
+          buffer = Buffer.from(data.dataString, "base64");
+          type = mime.includes("jp") ? "image/jpeg" : mime.includes("webp") ? "image/webp" : "image/png";
+        } else {
+          buffer = Buffer.from(data.dataString, "utf-8");
+          type = "text/html";
+        }
+      }
+    } catch {
+      // Not a wrapper: keep the file as it came.
+    }
+  }
   if (buffer.length > MAX_BYTES) fail("That file is too big to keep (over 8 MB).");
-  const type = (res.headers.get("content-type") || "").toLowerCase();
   const ext = type.includes("png")
     ? ".png"
     : type.includes("jpeg") || type.includes("jpg")

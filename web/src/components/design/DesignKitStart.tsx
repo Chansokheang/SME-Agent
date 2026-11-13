@@ -2,9 +2,27 @@
 
 /* eslint-disable @next/next/no-img-element -- thumbnails of the owner's uploads, served by our backend */
 
-import { ArrowRight, CaretDown, Check, CircleNotch, Cube, Plus, Rocket, Trash, UploadSimple, X } from "@phosphor-icons/react";
+import {
+  ArrowRight,
+  CaretDown,
+  Check,
+  CircleNotch,
+  Cube,
+  Plus,
+  Trash,
+  UploadSimple,
+  X,
+} from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
-import { api, type DesignEngine, type DesignFileKind, type DesignKit, type PhotoTag, type StitchStatus } from "@/lib/api";
+import LandingSkipCard from "@/components/LandingSkipCard";
+import {
+  api,
+  type DesignEngine,
+  type DesignFileKind,
+  type DesignKit,
+  type PhotoTag,
+  type StitchStatus,
+} from "@/lib/api";
 
 const TAGS: { value: PhotoTag; label: string }[] = [
   { value: "hero", label: "Top of home page" },
@@ -37,10 +55,15 @@ export default function DesignKitStart({
   const [styleNotes, setStyleNotes] = useState(kit.style_notes);
   const [avoid, setAvoid] = useState(kit.avoid);
   const [showcase, setShowcase] = useState(Boolean(kit.showcase_3d));
-  const [engine, setEngine] = useState<DesignEngine>(kit.design_engine ?? "gagesite");
+  const [engine, setEngine] = useState<DesignEngine>(
+    kit.design_engine ?? "gagesite",
+  );
   const [stitch, setStitch] = useState<StitchStatus | null>(null);
   useEffect(() => {
-    api.getStitch().then(setStitch).catch(() => setStitch(null));
+    api
+      .getStitch()
+      .then(setStitch)
+      .catch(() => setStitch(null));
   }, []);
   const stitchMissing = engine === "stitch" && !stitch?.connected;
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -53,7 +76,8 @@ export default function DesignKitStart({
     setError(null);
     try {
       let latest = kit;
-      for (const file of files) latest = await api.uploadDesignFile(projectId, kind, file);
+      for (const file of files)
+        latest = await api.uploadDesignFile(projectId, kind, file);
       onKitChange(latest);
       if (kind === "model") setShowcase(Boolean(latest.showcase_3d));
     } catch (e) {
@@ -113,18 +137,24 @@ export default function DesignKitStart({
   const [more, setMore] = useState(Boolean(kit.model));
   const summary = [
     kit.logo && "logo",
-    colors.length && `${colors.length} ${colors.length === 1 ? "colour" : "colours"}`,
-    kit.photos.length && `${kit.photos.length} ${kit.photos.length === 1 ? "photo" : "photos"}`,
-    (styleNotes.trim() || avoid.trim() || kit.references.length) && "style notes",
+    colors.length &&
+      `${colors.length} ${colors.length === 1 ? "colour" : "colours"}`,
+    kit.photos.length &&
+      `${kit.photos.length} ${kit.photos.length === 1 ? "photo" : "photos"}`,
+    (styleNotes.trim() || avoid.trim() || kit.references.length) &&
+      "style notes",
     kit.model && "3D model",
   ].filter(Boolean) as string[];
 
   return (
     <div className="mx-auto max-w-3xl pb-2">
       <header>
-        <h2 className="font-display text-2xl font-bold leading-tight tracking-tight">What should your website look like?</h2>
+        <h2 className="font-display text-2xl font-bold leading-tight tracking-tight">
+          What should your website look like?
+        </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">
-          Everything here is optional. Add what you have, skip the rest, and Gagesite picks what fits your business.
+          Everything here is optional. Add what you have, skip the rest, and
+          Gagesite picks what fits your business.
         </p>
       </header>
 
@@ -149,7 +179,9 @@ export default function DesignKitStart({
                 alt="Your logo"
                 className="h-10 max-w-[160px] rounded-md border border-line bg-white object-contain p-1"
               />
-              <TextButton onClick={() => remove("logo", kit.logo!)}>Remove</TextButton>
+              <TextButton onClick={() => remove("logo", kit.logo!)}>
+                Remove
+              </TextButton>
             </div>
           )}
         </Row>
@@ -157,7 +189,11 @@ export default function DesignKitStart({
         <Row
           title="Colours"
           done={colors.length > 0}
-          hint={colors.length ? "Click a swatch to change it." : "Your brand colours, up to 4. Otherwise Gagesite picks a palette."}
+          hint={
+            colors.length
+              ? "Click a swatch to change it."
+              : "Your brand colours, up to 4. Otherwise Gagesite picks a palette."
+          }
           action={
             <button
               type="button"
@@ -173,7 +209,10 @@ export default function DesignKitStart({
           {colors.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               {colors.map((color, i) => (
-                <span key={i} className="group relative [animation:rise-in_200ms_ease-out]">
+                <span
+                  key={i}
+                  className="group relative [animation:rise-in_200ms_ease-out]"
+                >
                   <label
                     className="block size-9 cursor-pointer overflow-hidden rounded-full border border-line shadow-sm transition hover:scale-105"
                     style={{ background: color }}
@@ -182,7 +221,11 @@ export default function DesignKitStart({
                     <input
                       type="color"
                       value={color}
-                      onChange={(e) => setColors(colors.map((c, j) => (j === i ? e.target.value : c)))}
+                      onChange={(e) =>
+                        setColors(
+                          colors.map((c, j) => (j === i ? e.target.value : c)),
+                        )
+                      }
                       className="sr-only"
                       aria-label={`Colour ${i + 1}`}
                     />
@@ -206,7 +249,13 @@ export default function DesignKitStart({
           done={kit.photos.length > 0}
           hint="Your place, products or team: photos you own or may use. Missing ones become labelled placeholders."
           action={
-            <UploadButton label="Add" accept={IMAGES} multiple busy={busy === "photo"} onFiles={(f) => upload("photo", f)} />
+            <UploadButton
+              label="Add"
+              accept={IMAGES}
+              multiple
+              busy={busy === "photo"}
+              onFiles={(f) => upload("photo", f)}
+            />
           }
         >
           {kit.photos.length > 0 && (
@@ -216,11 +265,21 @@ export default function DesignKitStart({
                   key={photo.file}
                   className="group relative overflow-hidden rounded-xl border border-line [animation:rise-in_200ms_ease-out]"
                 >
-                  <img src={api.previewUrl(projectId, `brand/${photo.file}`)} alt="" className="aspect-[4/3] w-full object-cover" />
+                  <img
+                    src={api.previewUrl(projectId, `brand/${photo.file}`)}
+                    alt=""
+                    className="aspect-[4/3] w-full object-cover"
+                  />
                   <select
                     value={photo.tag}
                     onChange={async (e) =>
-                      onKitChange(await api.tagDesignPhoto(projectId, photo.file, e.target.value as PhotoTag))
+                      onKitChange(
+                        await api.tagDesignPhoto(
+                          projectId,
+                          photo.file,
+                          e.target.value as PhotoTag,
+                        ),
+                      )
                     }
                     aria-label="Where to use this photo"
                     className="w-full border-t border-line bg-surface px-2 py-1.5 text-xs outline-none"
@@ -232,7 +291,10 @@ export default function DesignKitStart({
                     ))}
                   </select>
                   <span className="absolute right-1.5 top-1.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                    <RemoveButton label="Remove photo" onClick={() => remove("photo", photo.file)} />
+                    <RemoveButton
+                      label="Remove photo"
+                      onClick={() => remove("photo", photo.file)}
+                    />
                   </span>
                 </li>
               ))}
@@ -242,7 +304,10 @@ export default function DesignKitStart({
 
         <Row
           title="Style"
-          done={kit.references.length > 0 || Boolean(styleNotes.trim() || avoid.trim())}
+          done={
+            kit.references.length > 0 ||
+            Boolean(styleNotes.trim() || avoid.trim())
+          }
           hint="The feel you want, in your own words. Screenshots of sites you like help too (for mood only, never copied)."
           action={
             <UploadButton
@@ -256,7 +321,9 @@ export default function DesignKitStart({
         >
           <div className="grid gap-3 @2xl:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-medium text-muted">I&apos;d like it to feel</span>
+              <span className="text-xs font-medium text-muted">
+                I&apos;d like it to feel
+              </span>
               <GrowingTextarea
                 boxRef={notesRef}
                 id="style-notes"
@@ -266,7 +333,9 @@ export default function DesignKitStart({
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-muted">Please avoid</span>
+              <span className="text-xs font-medium text-muted">
+                Please avoid
+              </span>
               <GrowingTextarea
                 boxRef={avoidRef}
                 id="style-avoid"
@@ -279,14 +348,20 @@ export default function DesignKitStart({
           {kit.references.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2">
               {kit.references.map((ref) => (
-                <li key={ref} className="group relative [animation:rise-in_200ms_ease-out]">
+                <li
+                  key={ref}
+                  className="group relative [animation:rise-in_200ms_ease-out]"
+                >
                   <img
                     src={api.previewUrl(projectId, `.design-refs/${ref}`)}
                     alt=""
                     className="h-14 w-20 rounded-lg border border-line object-cover object-top"
                   />
                   <span className="absolute -right-1.5 -top-1.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                    <RemoveButton label="Remove screenshot" onClick={() => remove("reference", ref)} />
+                    <RemoveButton
+                      label="Remove screenshot"
+                      onClick={() => remove("reference", ref)}
+                    />
                   </span>
                 </li>
               ))}
@@ -296,7 +371,12 @@ export default function DesignKitStart({
       </div>
 
       <div className="mt-3 rounded-2xl border border-line bg-surface">
-        <DesignerCard engine={engine} onEngine={setEngine} stitch={stitch} onStitch={setStitch} />
+        <DesignerCard
+          engine={engine}
+          onEngine={setEngine}
+          stitch={stitch}
+          onStitch={setStitch}
+        />
       </div>
 
       <section className="mt-3 rounded-2xl border border-line bg-surface">
@@ -308,9 +388,14 @@ export default function DesignKitStart({
         >
           <span>
             <span className="block text-sm font-medium">More options</span>
-            <span className="block text-xs text-muted">A 3D model of your product.</span>
+            <span className="block text-xs text-muted">
+              A 3D model of your product.
+            </span>
           </span>
-          <CaretDown size={16} className={`shrink-0 text-muted transition-transform duration-200 ${more ? "rotate-180" : ""}`} />
+          <CaretDown
+            size={16}
+            className={`shrink-0 text-muted transition-transform duration-200 ${more ? "rotate-180" : ""}`}
+          />
         </button>
         {more && (
           <div className="divide-y divide-line border-t border-line [animation:rise-in_200ms_ease-out]">
@@ -331,15 +416,22 @@ export default function DesignKitStart({
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 text-sm [animation:rise-in_200ms_ease-out]">
                     <Cube size={18} className="text-accent" />
-                    <span className="min-w-0 truncate font-medium">{kit.model}</span>
-                    <TextButton onClick={() => remove("model", kit.model!)}>Remove</TextButton>
+                    <span className="min-w-0 truncate font-medium">
+                      {kit.model}
+                    </span>
+                    <TextButton onClick={() => remove("model", kit.model!)}>
+                      Remove
+                    </TextButton>
                   </div>
                   <label className="flex cursor-pointer items-start gap-3">
                     <Switch checked={showcase} onChange={setShowcase} />
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium">Show it on the home page</span>
+                      <span className="block text-sm font-medium">
+                        Show it on the home page
+                      </span>
                       <span className="block text-xs leading-relaxed text-muted">
-                        It turns as visitors scroll. People who turn animations off see a still picture.
+                        It turns as visitors scroll. People who turn animations
+                        off see a still picture.
                       </span>
                     </span>
                   </label>
@@ -351,31 +443,27 @@ export default function DesignKitStart({
       </section>
 
       {onSkip && (
-        <section className="mt-3 flex items-start gap-4 rounded-2xl border border-dashed border-line-strong bg-surface px-5 py-4">
-          <Rocket size={22} weight="duotone" className="mt-0.5 shrink-0 text-accent" />
-          <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold leading-6">Only need a landing page?</h3>
-            <p className="text-[13px] leading-relaxed text-muted">
-              Skip this step. Implementation builds one modern landing page and designs it there, using anything you
-              added above. You can come back and design a full website later.
-            </p>
-            <button type="button" onClick={skip} disabled={busy !== null} className={`${ACTION} mt-3`}>
-            {busy === "skip" ? <CircleNotch size={14} className="animate-spin" /> : null}
-              Skip to Implementation
-              <ArrowRight size={14} weight="bold" />
-            </button>
-          </div>
-        </section>
+        <LandingSkipCard
+          projectId={projectId}
+          onSkip={skip}
+          disabled={busy !== null}
+          className="mt-3"
+        />
       )}
 
       {error && (
-        <p role="alert" className="mt-3 rounded-xl bg-danger-soft px-4 py-2.5 text-sm text-danger [animation:rise-in_200ms_ease-out]">
+        <p
+          role="alert"
+          className="mt-3 rounded-xl bg-danger-soft px-4 py-2.5 text-sm text-danger [animation:rise-in_200ms_ease-out]"
+        >
           {error}
         </p>
       )}
 
       <div className="sticky bottom-3 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface/95 py-2.5 pl-5 pr-2.5 shadow-[0_8px_24px_-16px_rgba(14,27,44,0.35)] backdrop-blur">
-        <p className={`min-w-0 text-sm text-muted ${stitchMissing ? "" : "hidden @lg:block"}`}>
+        <p
+          className={`min-w-0 text-sm text-muted ${stitchMissing ? "" : "hidden @lg:block"}`}
+        >
           {stitchMissing ? (
             "Connect Google Stitch above, or choose Gagesite's designer."
           ) : summary.length ? (
@@ -392,9 +480,15 @@ export default function DesignKitStart({
           disabled={busy !== null || stitchMissing}
           className="group ml-auto inline-flex h-10 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white transition hover:bg-accent-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {busy === "start" ? <CircleNotch size={16} className="animate-spin" /> : null}
+          {busy === "start" ? (
+            <CircleNotch size={16} className="animate-spin" />
+          ) : null}
           Show me 3 styles
-          <ArrowRight size={16} weight="bold" className="transition group-hover:translate-x-0.5" />
+          <ArrowRight
+            size={16}
+            weight="bold"
+            className="transition group-hover:translate-x-0.5"
+          />
         </button>
       </div>
     </div>
@@ -412,13 +506,20 @@ const ACTION =
  * Text boxes that grow with what is typed (up to the max height in their class, then they
  * scroll). Boxes sitting side by side keep the same height, so the row stays even.
  */
-function useMatchedHeights(refs: React.RefObject<HTMLTextAreaElement | null>[], text: string) {
+function useMatchedHeights(
+  refs: React.RefObject<HTMLTextAreaElement | null>[],
+  text: string,
+) {
   useEffect(() => {
     const fit = () => {
-      const boxes = refs.map((r) => r.current).filter((b): b is HTMLTextAreaElement => !!b);
+      const boxes = refs
+        .map((r) => r.current)
+        .filter((b): b is HTMLTextAreaElement => !!b);
       for (const box of boxes) box.style.height = "auto";
       const natural = boxes.map((box) => box.scrollHeight + 2); // + the 1px borders
-      const sameRow = boxes.length > 1 && boxes.every((box) => box.offsetTop === boxes[0].offsetTop);
+      const sameRow =
+        boxes.length > 1 &&
+        boxes.every((box) => box.offsetTop === boxes[0].offsetTop);
       boxes.forEach((box, i) => {
         box.style.height = `${sameRow ? Math.max(...natural) : natural[i]}px`;
       });
@@ -496,7 +597,12 @@ function DesignerCard({
     }
   }
 
-  const options: { value: DesignEngine; title: string; text: string; tag?: string }[] = [
+  const options: {
+    value: DesignEngine;
+    title: string;
+    text: string;
+    tag?: string;
+  }[] = [
     {
       value: "gagesite",
       title: "Gagesite's designer",
@@ -514,9 +620,14 @@ function DesignerCard({
     <section className="px-5 py-4">
       <h3 className="text-sm font-semibold leading-6">Who draws the styles</h3>
       <p className="text-[13px] leading-relaxed text-muted">
-        Either way, Gagesite builds the final pages, so your website works the same.
+        Either way, Gagesite builds the final pages, so your website works the
+        same.
       </p>
-      <div role="radiogroup" aria-label="Who draws the styles" className="mt-3 grid gap-2 @2xl:grid-cols-2">
+      <div
+        role="radiogroup"
+        aria-label="Who draws the styles"
+        className="mt-3 grid gap-2 @2xl:grid-cols-2"
+      >
         {options.map((o) => {
           const on = engine === o.value;
           return (
@@ -527,7 +638,9 @@ function DesignerCard({
               aria-checked={on}
               onClick={() => onEngine(o.value)}
               className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition active:scale-[0.99] ${
-                on ? "border-accent bg-accent-soft/40" : "border-line hover:bg-surface-2"
+                on
+                  ? "border-accent bg-accent-soft/40"
+                  : "border-line hover:bg-surface-2"
               }`}
             >
               <span
@@ -541,7 +654,9 @@ function DesignerCard({
                 <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
                   {o.title}
                   {o.tag && (
-                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-muted">{o.tag}</span>
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-muted">
+                      {o.tag}
+                    </span>
                   )}
                   {o.value === "stitch" && stitch?.connected && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
@@ -549,7 +664,9 @@ function DesignerCard({
                     </span>
                   )}
                 </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-muted">{o.text}</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+                  {o.text}
+                </span>
               </span>
             </button>
           );
@@ -562,26 +679,44 @@ function DesignerCard({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <Check size={16} weight="bold" className="text-emerald-600" />
               <span>
-                Google Stitch is connected (key ending <span className="font-mono">{stitch.hint}</span>). It&apos;s
+                Google Stitch is connected (key ending{" "}
+                <span className="font-mono">{stitch.hint}</span>). It&apos;s
                 used for every project that chooses it.
               </span>
-              <button type="button" onClick={disconnect} className="text-xs font-medium text-accent hover:underline">
+              <button
+                type="button"
+                onClick={disconnect}
+                className="text-xs font-medium text-accent hover:underline"
+              >
                 Disconnect
               </button>
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Connect Google Stitch (once)</p>
+              <p className="text-sm font-medium">
+                Connect Google Stitch (once)
+              </p>
               <ol className="list-decimal space-y-0.5 pl-5 text-xs leading-relaxed text-muted">
                 <li>
                   Open{" "}
-                  <a href="https://stitch.withgoogle.com" target="_blank" rel="noreferrer" className="text-accent underline">
+                  <a
+                    href="https://stitch.withgoogle.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent underline"
+                  >
                     stitch.withgoogle.com
                   </a>{" "}
                   and sign in with your Google account.
                 </li>
-                <li>Click your profile picture, then Stitch settings, then API key, and create a key.</li>
-                <li>Paste it below and press Connect. Gagesite checks it with Google and keeps it encrypted.</li>
+                <li>
+                  Click your profile picture, then Stitch settings, then API
+                  key, and create a key.
+                </li>
+                <li>
+                  Paste it below and press Connect. Gagesite checks it with
+                  Google and keeps it encrypted.
+                </li>
               </ol>
               <div className="flex flex-wrap gap-2">
                 <input
@@ -594,8 +729,15 @@ function DesignerCard({
                   spellCheck={false}
                   className={`${FIELD} min-w-0 flex-1`}
                 />
-                <button type="button" onClick={connect} disabled={busy || !key.trim()} className={ACTION}>
-                  {busy ? <CircleNotch size={14} className="animate-spin" /> : null}
+                <button
+                  type="button"
+                  onClick={connect}
+                  disabled={busy || !key.trim()}
+                  className={ACTION}
+                >
+                  {busy ? (
+                    <CircleNotch size={14} className="animate-spin" />
+                  ) : null}
                   {busy ? "Checking..." : "Connect"}
                 </button>
               </div>
@@ -603,8 +745,8 @@ function DesignerCard({
           )}
           {error && <p className="mt-2 text-xs text-danger">{error}</p>}
           <p className="mt-2 text-xs leading-relaxed text-faint">
-            Your plan, colours and notes are sent to Google to draw the styles. If Stitch doesn&apos;t answer, Gagesite
-            draws the styles itself.
+            Your plan, colours and notes are sent to Google to draw the styles.
+            If Stitch doesn&apos;t answer, Gagesite draws the styles itself.
           </p>
         </div>
       )}
@@ -629,7 +771,9 @@ function Row({
   action: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  const hasBody = Array.isArray(children) ? children.some(Boolean) : Boolean(children);
+  const hasBody = Array.isArray(children)
+    ? children.some(Boolean)
+    : Boolean(children);
   return (
     <section className="px-5 py-4">
       <div className="flex items-start gap-4">
@@ -651,7 +795,13 @@ function Row({
   );
 }
 
-function TextButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function TextButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
@@ -679,8 +829,17 @@ function UploadButton({
   const ref = useRef<HTMLInputElement>(null);
   return (
     <>
-      <button type="button" onClick={() => ref.current?.click()} disabled={busy} className={ACTION}>
-        {busy ? <CircleNotch size={14} className="animate-spin" /> : <UploadSimple size={14} />}
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        disabled={busy}
+        className={ACTION}
+      >
+        {busy ? (
+          <CircleNotch size={14} className="animate-spin" />
+        ) : (
+          <UploadSimple size={14} />
+        )}
         {busy ? "Uploading..." : label}
       </button>
       <input
@@ -698,7 +857,13 @@ function UploadButton({
   );
 }
 
-function Switch({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+function Switch({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
     <span className="relative mt-0.5 inline-flex shrink-0">
       <input
@@ -714,7 +879,13 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: (value: boo
   );
 }
 
-function RemoveButton({ label, onClick }: { label: string; onClick: () => void }) {
+function RemoveButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"

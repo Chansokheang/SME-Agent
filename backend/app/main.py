@@ -239,6 +239,60 @@ def design_version(root: Path) -> int:
     return int(newest * 1000)
 
 
+STITCH_IMAGE = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+
+
+def stitch_files(root: Path, direction_id) -> list[Path]:
+    """Stitch's saved files for one style (docs/03-design/stitch/style-<id>-*)."""
+    folder = root / "stitch"
+    if direction_id is None or not folder.is_dir():
+        return []
+    return sorted(f for f in folder.glob(f"style-{direction_id}-*") if f.is_file())
+
+
+def stitch_payload(file: Path) -> tuple[bytes, str] | None:
+    """A Stitch file's content and type. Older runs saved Google's download wrapper
+    ({"dataString": ...}) as it was; it is unpacked here, never rewritten on disk."""
+    import base64
+
+    raw = file.read_bytes()
+    suffix = file.suffix.lower()
+    if suffix in STITCH_IMAGE:
+        return raw, STITCH_IMAGE[suffix]
+    if raw[:1] == b"{":
+        try:
+            data = json.loads(raw.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return None
+        text = data.get("dataString") if isinstance(data, dict) else None
+        if not isinstance(text, str):
+            return None
+        mime = str((data.get("imageMetadata") or {}).get("mimeType") or "")
+        if mime or not text.lstrip().startswith("<"):
+            try:
+                body = base64.b64decode(text, validate=False)
+            except ValueError:
+                return None
+            kind = "jpeg" if "jp" in mime else "webp" if "webp" in mime else "png"
+            return body, f"image/{kind}"
+        return text.encode("utf-8"), "text/html"
+    if suffix == ".html":
+        return raw, "text/html"
+    return None
+
+
+def stitch_originals(root: Path, direction_id) -> dict | None:
+    """Which of Stitch's own screens (picture, page) were saved for this style."""
+    found: dict[str, str] = {}
+    for file in stitch_files(root, direction_id):
+        payload = stitch_payload(file)
+        if not payload:
+            continue
+        kind = "image" if payload[1].startswith("image/") else "html"
+        found.setdefault(kind, file.name)
+    return found or None
+
+
 def design_artifact(project_id: str) -> dict:
     design, design_error = read_json(project_id, DESIGN_JSON)
     directions, directions_error = read_json(project_id, DIRECTIONS_JSON)
@@ -292,7 +346,8 @@ def design_artifact(project_id: str) -> dict:
         "open_questions": (design or {}).get("open_questions", []),
         "directions": [
             {**d, "file": f"directions/{d.get('id')}.html",
-             "exists": (root / "directions" / f"{d.get('id')}.html").exists()}
+             "exists": (root / "directions" / f"{d.get('id')}.html").exists(),
+             "stitch_original": stitch_originals(root, d.get("id")) if d.get("made_with") == "stitch" else None}
             for d in (directions or [])
         ],
         "tokens": tokens,
@@ -652,7 +707,8 @@ class LandingBrief(BaseModel):
     business_name: str = PydanticField(min_length=1, max_length=120)
     offer: str = PydanticField(min_length=1, max_length=1500)
     industry: str = PydanticField(default="", max_length=120)
-    main_action: str = PydanticField(min_length=1, max_length=80)
+    # Optional: when left out, the page's main action is chosen from the offer (and prompt).
+    main_action: str = PydanticField(default="", max_length=80)
     main_action_link: str = PydanticField(default="", max_length=500)
     facts: str = PydanticField(default="", max_length=4000)
     contact: str = PydanticField(default="", max_length=1000)
@@ -667,6 +723,8 @@ class LandingBrief(BaseModel):
 
 
 def landing_scope(brief: LandingBrief) -> dict:
+    action = brief.main_action.strip()
+    goal = action or "Take the page's main action (chosen from the offer)"
     facts = [line.strip(" -*\t") for line in brief.facts.splitlines() if line.strip(" -*\t")]
     return {
         "version": 1,
@@ -677,7 +735,7 @@ def landing_scope(brief: LandingBrief) -> dict:
             "description": brief.offer.strip(),
             "location": brief.location.strip(),
             "target_customers": [],
-            "goals": [f"Visitors {brief.main_action.strip().lower()}"],
+            "goals": [f"Visitors {action.lower()}" if action else goal],
             "languages": [lang.strip() for lang in brief.languages if lang.strip()] or ["English"],
         },
         "details": {
@@ -686,20 +744,22 @@ def landing_scope(brief: LandingBrief) -> dict:
                      + ([{"label": "Main action link", "value": brief.main_action_link.strip()}]
                         if brief.main_action_link.strip() else []),
         },
-        "brief": {"main_action": {"label": brief.main_action.strip(),
-                                  "why": "The one thing this landing page should make visitors do."}},
+        "brief": {"main_action": {"label": action or "Chosen from the offer",
+                                  "why": "The one thing this landing page should make visitors do."
+                                         + ("" if action else " The owner left it open: pick the action that best fits the offer (and their prompt).")}},
         "site_type": "Landing page",
         "site_category": "landing",
         "roles": [{"name": "Visitor", "description": "Anyone visiting the page"}],
         "pages": [
-            {"name": "Home", "path": "/", "purpose": f"One landing page that leads to: {brief.main_action.strip()}",
+            {"name": "Home", "path": "/", "purpose": f"One landing page that leads to: {action or 'its main action'}",
              "type": "landing", "roles": ["Visitor"], "sections": []},
             {"name": "Privacy", "path": "/privacy", "purpose": "Privacy notice", "type": "content",
              "roles": ["Visitor"], "sections": ["Privacy text"]},
         ],
-        "features": [{"id": "F1", "name": brief.main_action.strip(), "description": brief.main_action.strip(),
+        "features": [{"id": "F1", "name": action or "Main action", "description": goal,
                       "priority": "must", "roles": ["Visitor"], "pages": ["Home"],
-                      "done_when": [f"A visitor can {brief.main_action.strip().lower()} from the page"]}],
+                      "done_when": [f"A visitor can {action.lower()} from the page" if action
+                                    else "A visitor can take the page's main action from the hero"]}],
         "business_rules": [], "permissions": [], "flows": [], "lifecycles": [], "notifications": [],
         "data_storage": {"why": "A landing page keeps no data of its own."},
         "existing_site": {"url": brief.link.strip()} if brief.link.strip() else {},
@@ -711,12 +771,37 @@ def landing_scope(brief: LandingBrief) -> dict:
     }
 
 
+@app.post("/api/projects/{project_id}/to-landing")
+def switch_to_landing(project_id: str, session: Session = Depends(get_session)):
+    """"Only need a landing page?" from Plan or Database: the project becomes a landing page, whose
+    short brief replaces the remaining steps. What the plan already holds fills the brief in."""
+    get_project(session, project_id)
+    if active_run(session, project_id):
+        raise HTTPException(409, "Wait for Gagesite to finish first")
+    if (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists():
+        raise HTTPException(409, "The website is already being built.")
+    start = {**read_start(project_id), "kind": "landing"}
+    path = workspace.workspace_path(project_id) / START_JSON
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(start, indent=2), encoding="utf-8")
+    return {"ok": True, "next": "01-scope"}
+
+
 @app.get("/api/projects/{project_id}/landing-brief")
 def get_landing_brief(project_id: str, session: Session = Depends(get_session)):
-    """The brief as the owner wrote it, and whether it can still change (until the build starts)."""
+    """The brief as the owner wrote it, and whether it can still change (until the build starts).
+    Before there is one, a plan made earlier (a website switched to a landing page) suggests one."""
     get_project(session, project_id)
     data, _ = read_json(project_id, LANDING_BRIEF_JSON)
-    return {"brief": data if isinstance(data, dict) else None,
+    suggested = None
+    if not isinstance(data, dict):
+        scope, _ = read_json(project_id, SCOPE_JSON)
+        business = scope.get("business") if isinstance(scope, dict) else None
+        if isinstance(business, dict):
+            suggested = {"business_name": str(business.get("name") or "")[:120],
+                         "offer": str(business.get("description") or "")[:1500],
+                         "location": str(business.get("location") or "")[:200]}
+    return {"brief": data if isinstance(data, dict) else None, "suggested": suggested,
             "locked": (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists()}
 
 
@@ -732,7 +817,7 @@ def submit_landing_brief(project_id: str, body: LandingBrief, session: Session =
     if (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists():
         raise HTTPException(409, "The page is already being built. Ask for changes in Implementation.")
     # A changed brief before the build: the storyboard is redone from it.
-    for name in (STORYBOARD_JSON, STORYBOARD_MD):
+    for name in (STORYBOARD_JSON, STORYBOARD_MD, LANDING_DIRECTIONS_JSON):
         (workspace.workspace_path(project_id) / name).unlink(missing_ok=True)
     for url in (body.link, body.main_action_link):
         if url.strip() and not URL.match(url.strip()) and not url.strip().startswith(("mailto:", "tel:")):
@@ -748,7 +833,7 @@ def submit_landing_brief(project_id: str, body: LandingBrief, session: Session =
     (root / SCOPE_JSON).write_text(json.dumps(scope, indent=2, ensure_ascii=False), encoding="utf-8")
     (root / SCOPE_MD).write_text(
         f"# {body.business_name.strip()}: landing page\n\n{body.offer.strip()}\n\n"
-        f"**Main action:** {body.main_action.strip()}\n\n"
+        f"**Main action:** {body.main_action.strip() or 'chosen from the offer'}\n\n"
         + (f"## Key facts\n{body.facts.strip()}\n\n" if body.facts.strip() else "")
         + (f"## Contact\n{body.contact.strip()}\n" if body.contact.strip() else ""), encoding="utf-8")
     # The owner's own words (and prompt), for the Motion Director and the builder to read.
@@ -1011,6 +1096,7 @@ async def send_message(project_id: str, stage_key: str, body: SendMessage, sessi
     if director_phase:
         # The Director's own short conversation; the builder's conversation starts after approval.
         resume, run_session = False, str(uuid.uuid4())
+        write_other_looks(session, project_id)
     else:
         # The first message starts a new Claude session; later ones resume it.
         resume = state.session_id is not None
@@ -1408,6 +1494,82 @@ async def upload_landing_video(project_id: str, file: UploadFile, session: Sessi
 
 STORYBOARD_JSON = "docs/04-storyboard.json"
 STORYBOARD_MD = "docs/04-storyboard.md"
+# Before the storyboard, the Director offers 2 or 3 different looks; the owner picks one.
+LANDING_DIRECTIONS_JSON = "docs/04-directions.json"
+OTHER_LOOKS_MD = "docs/01-sources/other-looks.md"
+
+
+def read_directions(project_id: str) -> dict | None:
+    data, _ = read_json(project_id, LANDING_DIRECTIONS_JSON)
+    return data if isinstance(data, dict) and isinstance(data.get("directions"), list) else None
+
+
+def project_look(project_id: str) -> dict | None:
+    """The look a landing page settled on: its chosen direction, else its storyboard's mood."""
+    directions = read_directions(project_id)
+    if directions and directions.get("status") == "chosen":
+        chosen = next((d for d in directions["directions"]
+                       if isinstance(d, dict) and d.get("id") == directions.get("chosen")), None)
+        if chosen:
+            return {"display": (chosen.get("type") or {}).get("display", ""), "palette": chosen.get("palette", []),
+                    "motion": chosen.get("signature_motion", ""), "layout": chosen.get("layout", ""),
+                    "name": chosen.get("name", "")}
+    board = read_storyboard(project_id)
+    if board and isinstance(board.get("mood"), dict):
+        mood = board["mood"]
+        return {"display": mood.get("type", ""), "palette": mood.get("palette", []), "motion": "",
+                "layout": "", "name": board.get("concept", "")}
+    return None
+
+
+def write_other_looks(session: Session, project_id: str) -> None:
+    """What Gagesite's other landing pages already look like, so a new one doesn't repeat them."""
+    lines = []
+    for other in session.exec(select(Project).order_by(Project.created_at.desc())).all():
+        if other.id == project_id or len(lines) >= 12:
+            continue
+        look = project_look(other.id)
+        if not look:
+            continue
+        palette = ", ".join(str(c) for c in (look.get("palette") or [])[:6])
+        parts = [f"display type: {look['display']}" if look.get("display") else "",
+                 f"palette: {palette}" if palette else "",
+                 f"layout: {look['layout']}" if look.get("layout") else "",
+                 f"signature motion: {look['motion']}" if look.get("motion") else ""]
+        lines.append(f"- {look.get('name') or 'A landing page'}: " + "; ".join(p for p in parts if p))
+    path = workspace.workspace_path(project_id) / OTHER_LOOKS_MD
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if lines:
+        path.write_text("# Looks Gagesite's other landing pages already use\n\n"
+                        "Don't reuse their display font, palette or signature motion.\n\n" + "\n".join(lines) + "\n",
+                        encoding="utf-8")
+    else:
+        path.unlink(missing_ok=True)
+
+
+class ChooseDirection(BaseModel):
+    id: str = PydanticField(min_length=1, max_length=8)
+    note: str = PydanticField(default="", max_length=1000)
+
+
+@app.post("/api/projects/{project_id}/build/directions/choose")
+def choose_direction(project_id: str, body: ChooseDirection, session: Session = Depends(get_session)):
+    """The owner picks one of the Director's looks (with an optional note); the storyboard follows it."""
+    get_project(session, project_id)
+    if active_run(session, project_id):
+        raise HTTPException(409, "Wait for Gagesite to finish first")
+    data = read_directions(project_id)
+    if not data or not any(isinstance(d, dict) and d.get("id") == body.id for d in data["directions"]):
+        raise HTTPException(404, "That direction isn't offered")
+    if (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists():
+        raise HTTPException(409, "The page is already being built. Ask for changes in Implementation.")
+    data.update(status="chosen", chosen=body.id, owner_note=body.note.strip(), chosen_at=utcnow().isoformat())
+    root = workspace.workspace_path(project_id)
+    (root / LANDING_DIRECTIONS_JSON).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    # A storyboard made for another direction is made again.
+    for name in (STORYBOARD_JSON, STORYBOARD_MD):
+        (root / name).unlink(missing_ok=True)
+    return get_storyboard(project_id, session)
 
 
 def read_storyboard(project_id: str) -> dict | None:
@@ -1427,6 +1589,7 @@ def get_storyboard(project_id: str, session: Session = Depends(get_session)):
     board = read_storyboard(project_id)
     return {
         "storyboard": board,
+        "directions": read_directions(project_id),
         "markdown": workspace.read_text(project_id, STORYBOARD_MD),
         "approved": bool(board) and board.get("status") == "approved",
         "build_started": (workspace.workspace_path(project_id) / site_runner.BUILD_JSON).exists(),
@@ -1988,7 +2151,7 @@ RESET_FILES = {
     # The styles, components and key pages; the owner's design kit and brand files stay.
     DESIGN_STAGE: (DESIGN_MD,),
     BUILD_STAGE: (site_runner.BUILD_JSON, site_runner.BUILD_MD, build_team.BOARD, "docs/04-setup.json",
-                  "docs/04-storyboard.json", "docs/04-storyboard.md"),
+                  "docs/04-storyboard.json", "docs/04-storyboard.md", "docs/04-directions.json"),
 }
 # Folders a reset empties. site/ keeps its .git history, so saving to GitHub after a fresh
 # build is just the next version instead of a clash with what's already there.
@@ -2828,6 +2991,25 @@ ISOLATE_JS = """(function () {
   });
   parent.postMessage({ type: "gs-ready" }, "*");
 })();"""
+
+
+@app.get("/api/projects/{project_id}/design/stitch/{name}")
+def stitch_original(project_id: str, name: str, session: Session = Depends(get_session)):
+    """One of Google Stitch's own screens for a style, as Stitch drew it (UI Design shows it next to
+    Gagesite's version). A page is served sandboxed: it runs on its own, away from Gagesite."""
+    get_project(session, project_id)
+    if not re.fullmatch(r"style-[A-Za-z0-9_-]+\.[a-z]{2,5}", name):
+        raise HTTPException(404, "Not found")
+    file = workspace.workspace_path(project_id) / "docs" / "03-design" / "stitch" / name
+    payload = stitch_payload(file) if file.is_file() else None
+    if not payload:
+        raise HTTPException(404, "Not found")
+    body, media = payload
+    headers = {"Cache-Control": "no-store"}
+    if media == "text/html":
+        media = "text/html; charset=utf-8"
+        headers["Content-Security-Policy"] = "sandbox allow-scripts"
+    return Response(body, media_type=media, headers=headers)
 
 
 @app.get("/api/projects/{project_id}/preview/{path:path}")

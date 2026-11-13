@@ -16,7 +16,63 @@ photos, style notes, "avoid" list, 3D model), `docs/04-setup.json` (`landing_sty
 design: your concept sets the look too) or the approved design in `docs/03-design/`, and
 `docs/04-landing-video.json` when it exists.
 
-## How to think
+## Step 1: offer directions first (no storyboard yet)
+Read `docs/04-directions.json` first.
+
+**When it doesn't exist** (or the owner asks for new directions), write ONLY the directions and stop.
+Do NOT write the storyboard yet. Offer **3 directions** (2 when the owner's prompt or style note already
+fixes most of the look). They must be truly different pages, not one idea in three colours. Each
+direction changes ALL of these:
+- **Type:** a different display/body pairing. Use real Google Fonts, never Inter, Roboto or Arial as the
+  display face.
+- **Palette:** a different temperature and contrast, for example dark and cinematic, warm paper, or
+  bold saturated.
+- **Layout:** for example an editorial asymmetric grid, a centred cinematic stage, a split screen or
+  a full-bleed product.
+- **Hero:** a different composition and what it shows.
+- **Signature motion:** the one moment people remember, for example a pinned product that changes
+  screens, a sideways story, words that scrub in, cards that stack, or a camera move.
+
+Each direction is still about THIS business: the big idea fits only it. Keep what the owner fixed
+(their colours, logo, prompt, style note, facts) in every direction and vary the rest. When the
+owner fixed their colours, vary the type, layout, hero and motion, and use their colours differently
+(dark base vs light base, which colour leads).
+
+**Don't repeat other projects.** `docs/01-sources/other-looks.md` (when present) lists the looks of
+Gagesite's other landing pages. No direction may reuse their display font, their palette or their
+signature motion. Each direction's `differs_from_others` says how it is different.
+
+Write `docs/04-directions.json`:
+```json
+{
+  "status": "choose",
+  "directions": [
+    {
+      "id": "A",
+      "name": "Morning ritual",
+      "line": "Warm, editorial and slow, like a coffee-table magazine.",
+      "big_idea": "The scroll is one morning: from grinding beans to the first sip.",
+      "type": { "display": "Fraunces", "body": "Manrope" },
+      "palette": ["#f4ede3", "#2b1d14", "#c8642c"],
+      "layout": "Editorial asymmetric grid, big photos bleeding off one side",
+      "hero": "A huge serif headline over a cropped close-up of beans; the subscription card floats bottom right",
+      "signature_motion": "Words of the headline scrub in one by one; photos open like a magazine page turning",
+      "feels_like": "Kinfolk, calm, crafted",
+      "differs_from_others": "Serif display and warm paper base; the other pages are dark and sans"
+    }
+  ]
+}
+```
+In the chat, reply in 2 or 3 sentences: the directions are ready, give each one's name and line,
+and say they can pick one on the right (and add a note to mix in something from another).
+
+**When `status` is `"chosen"`**, the owner has picked `chosen` (plus `owner_note`, which may ask to mix
+in parts of another direction). Write the storyboard below IN that direction. Its `mood`, type,
+palette, layout and signature motion come from the chosen direction, adjusted by the note. Add
+`"direction": "<id>"` to the storyboard. When the owner later asks to change the storyboard, keep
+the direction unless they ask for a different one.
+
+## How to think (the storyboard)
 1. **One big idea.** Find the single image or metaphor that IS this business and can carry the
    whole scroll, for example "a morning at the coworking space, from first coffee to the
    meeting", "the bean's journey from roaster to cup" or "a conversation that grows from one

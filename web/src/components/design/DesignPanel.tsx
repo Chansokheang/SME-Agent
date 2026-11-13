@@ -265,6 +265,8 @@ function DirectionsView({
   const chosenId = pickedId ?? artifact.chosen_direction;
   // Open on the style in use, else the recommended one, else the first.
   const [viewing, setViewing] = useState<number | null>(null);
+  // A style Google Stitch drew can be seen as Stitch drew it, next to Gagesite's version.
+  const [source, setSource] = useState<"gagesite" | "stitch">("gagesite");
   const current =
     directions.find((d) => d.id === viewing) ??
     directions.find((d) => d.id === chosenId) ??
@@ -289,7 +291,13 @@ function DirectionsView({
   const several = directions.length > 1;
   const go = (step: number) => setViewing(directions[(index + step + directions.length) % directions.length].id);
   const chosen = chosenId === current.id;
-  const url = api.previewUrl(projectId, `docs/03-design/${current.file}`);
+  const original = current.made_with === "stitch" ? current.stitch_original : null;
+  const showStitch = source === "stitch" && !!original;
+  const stitchImage = original?.image ? api.stitchOriginalUrl(projectId, original.image) : null;
+  const stitchPage = original?.html ? api.stitchOriginalUrl(projectId, original.html) : null;
+  const url = showStitch
+    ? (stitchPage ?? stitchImage ?? "")
+    : api.previewUrl(projectId, `docs/03-design/${current.file}`);
 
   return (
     <div className="space-y-3">
@@ -387,8 +395,55 @@ function DirectionsView({
             )}
           </div>
         </header>
+        {original && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-4 py-2">
+            <div role="radiogroup" aria-label="Which version to show" className="flex rounded-lg bg-surface-2 p-0.5">
+              {(
+                [
+                  ["gagesite", "Gagesite's version"],
+                  ["stitch", "Stitch's original"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  role="radio"
+                  aria-checked={source === key}
+                  onClick={() => setSource(key)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition duration-200 ${
+                    source === key ? "bg-surface text-ink shadow-sm ring-1 ring-line" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="min-w-0 flex-1 text-xs text-muted">
+              {showStitch
+                ? "As Google Stitch drew it. Gagesite rebuilt it with your real content and fixed what broke the design rules; Implementation builds from Gagesite's version."
+                : "Gagesite's rebuild of Stitch's screen: your real content, the building blocks, and the design rules applied."}
+            </p>
+          </div>
+        )}
         <div className="relative aspect-[16/10] bg-surface-2">
-          {current.exists ? (
+          {showStitch ? (
+            stitchImage ? (
+              <div className="absolute inset-0 overflow-y-auto">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={stitchImage}
+                  alt={`Google Stitch's original screen for style ${index + 1}`}
+                  className="block w-full"
+                />
+              </div>
+            ) : (
+              <iframe
+                src={stitchPage ?? undefined}
+                title={`Google Stitch's original page for style ${index + 1}`}
+                sandbox="allow-scripts"
+                className="absolute inset-0 h-full w-full border-0 bg-white"
+              />
+            )
+          ) : current.exists ? (
             <ScaledFrame src={url} title={`Style ${index + 1}: ${current.name}`} interactive={false} version={refreshKey} />
           ) : (
             <div className="grid h-full place-items-center text-sm text-muted">

@@ -1,5 +1,6 @@
 "use client";
 
+import LandingSkipCard from "@/components/LandingSkipCard";
 import {
   CircleNotch,
   FileArrowUp,
@@ -17,7 +18,13 @@ import ScopePanel from "@/components/ScopePanel";
 import ChatColumn from "@/components/stage/ChatColumn";
 import StartOverButton from "@/components/stage/StartOverButton";
 import StageLayout from "@/components/stage/StageLayout";
-import { api, type ChatFile, type ScopeArtifact, type SourceDoc, type StageInfo } from "@/lib/api";
+import {
+  api,
+  type ChatFile,
+  type ScopeArtifact,
+  type SourceDoc,
+  type StageInfo,
+} from "@/lib/api";
 import { useStageRun } from "@/lib/useStageRun";
 
 const STAGE = "01-scope";
@@ -101,7 +108,8 @@ export default function ScopeStage({
     setUploadError(null);
     const added: string[] = [];
     try {
-      for (const file of files) added.push((await api.uploadSource(projectId, file)).file);
+      for (const file of files)
+        added.push((await api.uploadSource(projectId, file)).file);
     } catch (e) {
       setUploadError((e as Error).message);
     } finally {
@@ -123,9 +131,13 @@ export default function ScopeStage({
   /** Sends a message; links in it are opened first (the plan's AI can't browse), with progress shown here. */
   async function send(text: string, files: ChatFile[] = []) {
     const known = new Set(docs.map((d) => d.url).filter(Boolean));
-    const urls = [...new Set((text.match(URL_PATTERN) ?? []).map((u) => u.replace(/[.,;:!?)\]}]+$/, "")))].filter(
-      (u) => !known.has(u),
-    );
+    const urls = [
+      ...new Set(
+        (text.match(URL_PATTERN) ?? []).map((u) =>
+          u.replace(/[.,;:!?)\]}]+$/, ""),
+        ),
+      ),
+    ].filter((u) => !known.has(u));
     if (urls.length) {
       setUploadError(null);
       for (const url of urls.slice(0, 2)) {
@@ -133,7 +145,9 @@ export default function ScopeStage({
         try {
           await api.addSourceLink(projectId, url);
         } catch (e) {
-          setUploadError(`Couldn't open ${shortUrl(url)}: ${(e as Error).message}`);
+          setUploadError(
+            `Couldn't open ${shortUrl(url)}: ${(e as Error).message}`,
+          );
         }
       }
       setReading(null);
@@ -164,7 +178,11 @@ export default function ScopeStage({
         title="Add a document for the plan to keep (menu, price list, brochure...). To show Gagesite something just for this message, use the paperclip."
         className="grid size-8 place-items-center rounded-lg text-muted transition hover:bg-accent-soft hover:text-accent disabled:opacity-40"
       >
-        {uploading ? <CircleNotch size={18} className="animate-spin" /> : <FileArrowUp size={18} />}
+        {uploading ? (
+          <CircleNotch size={18} className="animate-spin" />
+        ) : (
+          <FileArrowUp size={18} />
+        )}
       </button>
       <input
         ref={attachRef}
@@ -188,7 +206,8 @@ export default function ScopeStage({
             {docs.map((d) => {
               const Icon = DOC_ICON[d.kind] ?? FileText;
               const unreadable = d.text_ready === false;
-              const label = d.kind === "link" && d.url ? shortUrl(d.url) : d.file;
+              const label =
+                d.kind === "link" && d.url ? shortUrl(d.url) : d.file;
               return (
                 <span
                   key={d.file}
@@ -200,7 +219,9 @@ export default function ScopeStage({
                         : d.file
                   }
                   className={`inline-flex max-w-[16rem] items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${
-                    unreadable ? "border-danger/40 bg-danger-soft text-danger" : "border-line bg-surface text-muted"
+                    unreadable
+                      ? "border-danger/40 bg-danger-soft text-danger"
+                      : "border-line bg-surface text-muted"
                   }`}
                 >
                   <Icon size={13} className="shrink-0" />
@@ -223,14 +244,21 @@ export default function ScopeStage({
         )}
         {reading && (
           <div className="flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-4 py-2.5 text-sm text-accent-ink">
-            <CircleNotch size={16} className="shrink-0 animate-spin text-accent" />
-            <span className="min-w-0 flex-1 truncate">Opening {reading}... This takes a few seconds.</span>
+            <CircleNotch
+              size={16}
+              className="shrink-0 animate-spin text-accent"
+            />
+            <span className="min-w-0 flex-1 truncate">
+              Opening {reading}... This takes a few seconds.
+            </span>
           </div>
         )}
         {(unread.length > 0 || uploadError) && (
           <div className="flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-4 py-2.5 text-sm">
             <Paperclip size={16} className="shrink-0 text-accent" />
-            <span className="min-w-0 flex-1 truncate text-accent-ink">{uploadError ?? `Added ${unread.join(", ")}`}</span>
+            <span className="min-w-0 flex-1 truncate text-accent-ink">
+              {uploadError ?? `Added ${unread.join(", ")}`}
+            </span>
             {!uploadError && (
               <button
                 onClick={askToRead}
@@ -259,7 +287,9 @@ export default function ScopeStage({
     setBusy(true);
     run.setError(null);
     try {
-      await (action === "approve" ? api.approve(projectId, STAGE) : api.reopen(projectId, STAGE));
+      await (action === "approve"
+        ? api.approve(projectId, STAGE)
+        : api.reopen(projectId, STAGE));
       if (action === "approve" && onApproved) onApproved();
       else onStageChange();
     } catch (e) {
@@ -276,7 +306,7 @@ export default function ScopeStage({
       panelIcon={ListChecks}
       chat={
         <ChatColumn
-            projectId={projectId}
+          projectId={projectId}
           title="Feature analysis"
           subtitle="Tell Gagesite about your business. It writes the plan as you talk."
           messages={run.messages}
@@ -307,7 +337,12 @@ export default function ScopeStage({
               />
             ) : null
           }
-          emptyState={<Welcome onPick={send} onAttach={approved ? undefined : () => attachRef.current?.click()} />}
+          emptyState={
+            <Welcome
+              onPick={send}
+              onAttach={approved ? undefined : () => attachRef.current?.click()}
+            />
+          }
         />
       }
       panel={
@@ -319,26 +354,51 @@ export default function ScopeStage({
           busy={busy}
           onApprove={() => act("approve")}
           onReopen={() => act("reopen")}
-          onSaveDetails={async (details) => setArtifact(await api.saveScopeDetails(projectId, details))}
+          onSaveDetails={async (details) =>
+            setArtifact(await api.saveScopeDetails(projectId, details))
+          }
           projectId={projectId}
-          onUploadContent={async (index, item, files) => setArtifact(await api.uploadContentFiles(projectId, index, item, files))}
-          onChooseContent={async (index, item, status) => setArtifact(await api.chooseContent(projectId, index, item, status))}
+          onUploadContent={async (index, item, files) =>
+            setArtifact(
+              await api.uploadContentFiles(projectId, index, item, files),
+            )
+          }
+          onChooseContent={async (index, item, status) =>
+            setArtifact(await api.chooseContent(projectId, index, item, status))
+          }
+          footer={
+            approved ? undefined : (
+              <LandingSkipCard
+                projectId={projectId}
+                disabled={busy || run.running}
+                className="mx-6 mb-6 mt-2"
+              />
+            )
+          }
         />
       }
     />
   );
 }
 
-function Welcome({ onPick, onAttach }: { onPick: (text: string) => void; onAttach?: () => void }) {
+function Welcome({
+  onPick,
+  onAttach,
+}: {
+  onPick: (text: string) => void;
+  onAttach?: () => void;
+}) {
   return (
     <div className="rounded-3xl border border-line bg-surface p-7">
       <span className="grid size-11 place-items-center rounded-2xl bg-accent-soft text-accent">
         <Sparkle size={22} weight="fill" />
       </span>
-      <h2 className="mt-4 font-display text-xl font-bold tracking-tight">Start with a sentence or two</h2>
+      <h2 className="mt-4 font-display text-xl font-bold tracking-tight">
+        Start with a sentence or two
+      </h2>
       <p className="mt-1.5 max-w-[56ch] text-[15px] leading-relaxed text-muted">
-        What does your business do, and what should the website help with? Gagesite asks a few questions and fills in the plan as
-        you go.
+        What does your business do, and what should the website help with?
+        Gagesite asks a few questions and fills in the plan as you go.
       </p>
       <div className="mt-5 grid gap-2">
         {EXAMPLES.map((example) => (
@@ -359,9 +419,12 @@ function Welcome({ onPick, onAttach }: { onPick: (text: string) => void; onAttac
         >
           <Paperclip size={18} className="shrink-0 text-accent" />
           <span>
-            <span className="font-medium text-ink">Have a menu, price list or brochure?</span> Add it (PDF, Word, PowerPoint or a
-            photo) and Gagesite reads it, so you type less. Already have a website, or like someone else&apos;s? Paste its link in
-            the chat.
+            <span className="font-medium text-ink">
+              Have a menu, price list or brochure?
+            </span>{" "}
+            Add it (PDF, Word, PowerPoint or a photo) and Gagesite reads it, so
+            you type less. Already have a website, or like someone else&apos;s?
+            Paste its link in the chat.
           </span>
         </button>
       )}

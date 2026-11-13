@@ -151,12 +151,15 @@ def _video_sources(page) -> list[str]:
 
 
 def _tile_is_video(tile) -> bool:
-    """A finished clip: hovering its tile loads a video."""
+    """A FINISHED clip: no progress percentage on the tile, and hovering it loads a real video.
+    (A clip still being made shows a percentage, and its menu can't download it yet.)"""
     try:
+        if re.search(r"\b\d{1,3}\s?%", tile.inner_text(timeout=3000) or ""):
+            return False
         tile.hover(timeout=5000)
         tile.page.wait_for_timeout(1500)
-        return tile.locator("video").count() > 0 or bool(
-            tile.evaluate("t => !!t.querySelector('video') || /play|videocam|movie/i.test(t.innerText || '')"))
+        return bool(tile.evaluate(
+            "t => [...t.querySelectorAll('video')].some(v => (v.currentSrc || v.src || '').startsWith('http'))"))
     except Exception:
         return False
 

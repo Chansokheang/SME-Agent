@@ -10,7 +10,7 @@ approves each stage's output before the next stage starts.
 | 01-scope    | `docs/01-scope.json`, `docs/01-scope.md`, `docs/01-flowchart.json` (the workflow flowchart, made on request) |
 | 02-database | `docs/02-schema.json`, `docs/02-schema.prisma`, `docs/02-database.md` |
 | 03-design   | `docs/03-design/`, `docs/03-design.md` |
-| 04-build    | `docs/04-build.json`, `docs/04-build.md`, `site/` (the website's code); for a landing page also `docs/04-storyboard.json` / `.md` (the Motion Director's) and `docs/04-motion/` (the motion check's sheets) |
+| 04-build    | `docs/04-build.json`, `docs/04-build.md`, `site/` (the website's code); for a landing page also `docs/04-directions.json` (the looks offered to the owner) and `docs/04-storyboard.json` / `.md` (the Motion Director's) and `docs/04-motion/` (the motion check's sheets) |
 | 05-deploy   | `docs/05-deploy.json`, `docs/05-deploy.md`, `site/prisma/production.ts`, and fixes in `site/` that going online needs |
 
 `docs/03-patterns/` holds the researched guides for the kinds of pages in this plan and the

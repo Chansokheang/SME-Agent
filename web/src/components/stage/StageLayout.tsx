@@ -26,15 +26,15 @@ export default function StageLayout({
   wide?: boolean;
   /** Claude is replying; shown on the collapsed chat rail. */
   chatBusy?: boolean;
-  /** On phones, open on the panel (e.g. when it holds the stage's starting form). */
+  /** The panel holds the stage's starting step: phones open on it; on desktop its folded rail is highlighted. */
   startOnPanel?: boolean;
 }) {
   const [pane, setPane] = useState<"chat" | "panel">(startOnPanel ? "panel" : "chat");
   const [chatFolded, setCollapsed] = usePersistentFlag("sme-builder:chat-collapsed");
-  // The right side (preview, design, plan...) is closed by default, so the chat fills the screen.
-  // It opens by itself while it holds the stage's starting form, which the owner needs to see.
-  const [panelOpen, setPanelOpen] = usePersistentFlag("sme-builder:panel-open");
-  const panelHidden = !panelOpen && !startOnPanel;
+  // The right side (preview, design, plan...) is open on every page by default, next to the chat.
+  // The owner can fold it away with its handle (or Ctrl/Cmd + /) to give the chat the full width.
+  const [panelOpen, setPanelOpen] = useState(true);
+  const panelHidden = !panelOpen;
   // Never both: with the panel closed, the chat always shows.
   const collapsed = chatFolded && !panelHidden;
   // Only one side folds at a time: showing the chat or hiding the panel always leaves the other open.
@@ -148,11 +148,26 @@ export default function StageLayout({
             aria-label={`Show ${panelLabel.toLowerCase()}`}
             className="group flex h-full w-full flex-col items-center gap-3 pt-16"
           >
-            <span className="grid size-9 place-items-center rounded-xl text-accent transition group-hover:bg-accent-soft">
+            <span
+              className={`relative grid size-9 place-items-center rounded-xl text-accent transition group-hover:bg-accent-soft ${
+                startOnPanel ? "bg-accent-soft" : ""
+              }`}
+            >
               <PanelIcon size={20} weight="duotone" />
+              {/* Something to start or choose is waiting on the right. */}
+              {startOnPanel && (
+                <span className="absolute right-0.5 top-0.5 flex size-2.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-60" />
+                  <span className="relative inline-flex size-2.5 rounded-full border-2 border-surface bg-accent" />
+                </span>
+              )}
             </span>
-            <span className="text-[11px] font-medium tracking-wide text-faint [writing-mode:vertical-rl] group-hover:text-accent-ink">
-              {panelLabel}
+            <span
+              className={`text-[11px] font-medium tracking-wide [writing-mode:vertical-rl] group-hover:text-accent-ink ${
+                startOnPanel ? "text-accent-ink" : "text-faint"
+              }`}
+            >
+              {startOnPanel ? `Open ${panelLabel.toLowerCase()} to continue` : panelLabel}
             </span>
           </button>
           <EdgeToggle

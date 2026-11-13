@@ -1,4 +1,5 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001";
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001";
 
 export type StageStatus = "locked" | "active" | "approved";
 
@@ -95,7 +96,14 @@ export interface Scope {
   site_categories?: string[];
   roles: { name: string; description: string }[];
   /** `type`: landing, content, listing, detail, chat, dashboard, form, docs, account, admin or auth. */
-  pages: { name: string; path: string; purpose: string; type?: string; roles: string[]; sections: string[] }[];
+  pages: {
+    name: string;
+    path: string;
+    purpose: string;
+    type?: string;
+    roles: string[];
+    sections: string[];
+  }[];
   features: {
     id: string;
     name: string;
@@ -108,7 +116,12 @@ export interface Scope {
   entities: { name: string; description: string; fields: string[] }[];
   integrations: string[];
   /** Keys and settings the website reads (names only; values live in Keys & settings). */
-  keys?: { name: string; purpose: string; secret: boolean; required: boolean }[];
+  keys?: {
+    name: string;
+    purpose: string;
+    secret: boolean;
+    required: boolean;
+  }[];
   branding: { tone: string; colors: string[]; style_notes: string };
   assumptions: string[];
   open_questions: string[];
@@ -123,7 +136,12 @@ export interface Scope {
   permissions?: { action: string; roles: string[] }[];
   flows?: ScopeFlow[];
   lifecycles?: ScopeLifecycle[];
-  notifications?: { name: string; to: string; when: string; channel: "email" | "screen" | "sms" | "kakao" }[];
+  notifications?: {
+    name: string;
+    to: string;
+    when: string;
+    channel: "email" | "screen" | "sms" | "kakao";
+  }[];
   /** Claude's advice on whether the site needs a database at all. */
   data_storage?: {
     needs_database: boolean | null;
@@ -167,12 +185,22 @@ export interface DataSourceInfo {
 
 export interface DataOverview {
   database: { connected: boolean; provider: string | null; error?: string };
-  tables: { name: string; label: string; description: string; db_rows: number | null; sources: DataSourceInfo[] }[];
+  tables: {
+    name: string;
+    label: string;
+    description: string;
+    db_rows: number | null;
+    sources: DataSourceInfo[];
+  }[];
   not_imported: DataSourceInfo[];
   issues: { severity: "info" | "warning"; message: string }[];
 }
 
-export type ImportSource = { kind: "file" | "upload" | "db"; file: string; sheet: string };
+export type ImportSource = {
+  kind: "file" | "upload" | "db";
+  file: string;
+  sheet: string;
+};
 
 export interface ImportSheet {
   name: string;
@@ -198,7 +226,10 @@ export interface ImportJob {
 
 export interface ImportSources {
   uploads: ImportFile[];
-  existing: { label: string; tables: { name: string; rows: number; columns: string[] }[] | null } | null;
+  existing: {
+    label: string;
+    tables: { name: string; rows: number; columns: string[] }[] | null;
+  } | null;
   job: ImportJob | null;
 }
 
@@ -214,7 +245,11 @@ export interface ImportColumn {
   primary: boolean;
   unique: boolean;
   choices: string[];
-  references: { table: string; column: string; match_options?: string[] } | null;
+  references: {
+    table: string;
+    column: string;
+    match_options?: string[];
+  } | null;
   secret: boolean;
 }
 
@@ -240,7 +275,13 @@ export interface ImportCheck {
   invalid: number;
   duplicates_file: number;
   duplicates_db: number;
-  problems: { column: string; label: string; reason: string; count: number; rows: number[] }[];
+  problems: {
+    column: string;
+    label: string;
+    reason: string;
+    count: number;
+    rows: number[];
+  }[];
   sample: Record<string, string | number | boolean | null>[];
   columns: string[];
 }
@@ -288,7 +329,8 @@ export interface ScopeLifecycle {
  * Fill every list and object with a default, so the plan view never breaks on a gap.
  */
 export function normalizeScope(raw: Partial<Scope>): Scope {
-  const list = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+  const list = <T>(value: unknown): T[] =>
+    Array.isArray(value) ? (value as T[]) : [];
   const text = (value: unknown) => (typeof value === "string" ? value : "");
   const business = (raw.business ?? {}) as Partial<Scope["business"]>;
   const branding = (raw.branding ?? {}) as Partial<Scope["branding"]>;
@@ -314,16 +356,25 @@ export function normalizeScope(raw: Partial<Scope>): Scope {
       pages: list(f.pages),
       done_when: list(f.done_when),
     })),
-    entities: list<Scope["entities"][number]>(raw.entities).map((e) => ({ ...e, fields: list(e.fields) })),
+    entities: list<Scope["entities"][number]>(raw.entities).map((e) => ({
+      ...e,
+      fields: list(e.fields),
+    })),
     integrations: list(raw.integrations),
     keys: list(raw.keys),
-    branding: { tone: text(branding.tone), colors: list(branding.colors), style_notes: text(branding.style_notes) },
+    branding: {
+      tone: text(branding.tone),
+      colors: list(branding.colors),
+      style_notes: text(branding.style_notes),
+    },
     assumptions: list(raw.assumptions),
     open_questions: list(raw.open_questions),
     brief: {
       main_action: raw.brief?.main_action,
       goals: list(raw.brief?.goals),
-      customers: list<{ name: string; needs: string[] }>(raw.brief?.customers).map((c) => ({ ...c, needs: list(c.needs) })),
+      customers: list<{ name: string; needs: string[] }>(
+        raw.brief?.customers,
+      ).map((c) => ({ ...c, needs: list(c.needs) })),
       value: raw.brief?.value && {
         proposition: text(raw.brief.value.proposition),
         revenue: list(raw.brief.value.revenue),
@@ -348,21 +399,32 @@ export function normalizeScope(raw: Partial<Scope>): Scope {
       },
     },
     business_rules: list(raw.business_rules),
-    content_checklist: list<Partial<ContentItem>>(raw.content_checklist).map((c) => {
-      const name = `${text(c.item)} ${text(c.detail)}`;
-      return {
-        item: text(c.item),
-        detail: text(c.detail),
-        status: c.status === "provided" || c.status === "placeholder" ? c.status : "needed",
-        // Older plans have no kind: spot logos and photos by name.
-        kind: c.kind ?? (/logo|photo|image|picture|사진|로고|이미지/i.test(name) ? "image" : "info"),
-        files: list(c.files),
-        sample_keywords: text(c.sample_keywords),
-        samples: list(c.samples),
-      };
-    }),
+    content_checklist: list<Partial<ContentItem>>(raw.content_checklist).map(
+      (c) => {
+        const name = `${text(c.item)} ${text(c.detail)}`;
+        return {
+          item: text(c.item),
+          detail: text(c.detail),
+          status:
+            c.status === "provided" || c.status === "placeholder"
+              ? c.status
+              : "needed",
+          // Older plans have no kind: spot logos and photos by name.
+          kind:
+            c.kind ??
+            (/logo|photo|image|picture|사진|로고|이미지/i.test(name)
+              ? "image"
+              : "info"),
+          files: list(c.files),
+          sample_keywords: text(c.sample_keywords),
+          samples: list(c.samples),
+        };
+      },
+    ),
     compliance: list(raw.compliance),
-    permissions: list<{ action: string; roles: string[] }>(raw.permissions).map((p) => ({ ...p, roles: list(p.roles) })),
+    permissions: list<{ action: string; roles: string[] }>(raw.permissions).map(
+      (p) => ({ ...p, roles: list(p.roles) }),
+    ),
     flows: list<ScopeFlow>(raw.flows).map((f) => ({
       ...f,
       role: text(f.role),
@@ -371,7 +433,11 @@ export function normalizeScope(raw: Partial<Scope>): Scope {
       steps: list(f.steps),
       problems: list(f.problems),
     })),
-    lifecycles: list<ScopeLifecycle>(raw.lifecycles).map((l) => ({ ...l, states: list(l.states), changes: list(l.changes) })),
+    lifecycles: list<ScopeLifecycle>(raw.lifecycles).map((l) => ({
+      ...l,
+      states: list(l.states),
+      changes: list(l.changes),
+    })),
     notifications: list(raw.notifications),
     details: {
       phone: text(raw.details?.phone),
@@ -383,7 +449,9 @@ export function normalizeScope(raw: Partial<Scope>): Scope {
       representative: text(raw.details?.representative),
       registration_number: text(raw.details?.registration_number),
       domain: text(raw.details?.domain),
-      other: list<{ label: string; value: string; hint: string }>(raw.details?.other).map((o) => ({
+      other: list<{ label: string; value: string; hint: string }>(
+        raw.details?.other,
+      ).map((o) => ({
         label: text(o.label),
         value: text(o.value),
         hint: text(o.hint),
@@ -397,10 +465,19 @@ export interface ScopeBrief {
   main_action?: { label: string; why: string };
   goals?: { goal: string; measure: string }[];
   customers?: { name: string; needs: string[] }[];
-  value?: { proposition: string; revenue: string[]; saves: string[]; competitors: string[] };
+  value?: {
+    proposition: string;
+    revenue: string[];
+    saves: string[];
+    competitors: string[];
+  };
   running?: { updates: string[]; monthly_cost: string; notes: string };
   economics?: {
-    costs: { item: string; amount: string; period: "once" | "month" | "year" }[];
+    costs: {
+      item: string;
+      amount: string;
+      period: "once" | "month" | "year";
+    }[];
     expected_return: string;
     payback: string;
     basis: string;
@@ -437,7 +514,15 @@ export interface ScopeArtifact {
   approvable?: boolean;
 }
 
-export type ColumnType = "String" | "Int" | "Float" | "Decimal" | "Boolean" | "DateTime" | "Json" | "Enum";
+export type ColumnType =
+  | "String"
+  | "Int"
+  | "Float"
+  | "Decimal"
+  | "Boolean"
+  | "DateTime"
+  | "Json"
+  | "Enum";
 
 export interface DbColumn {
   name: string;
@@ -468,10 +553,25 @@ export interface DatabaseSchema {
   /** Without a database: what the plan loses. */
   left_out?: string[];
   tables: DbTable[];
-  relations: { from_table: string; to_table: string; type: "one-to-one" | "one-to-many" | "many-to-many"; label: string }[];
+  relations: {
+    from_table: string;
+    to_table: string;
+    type: "one-to-one" | "one-to-many" | "many-to-many";
+    label: string;
+  }[];
   enums: { name: string; values: string[] }[];
-  data_sources: { file: string; sheet: string; maps_to: string | null; rows: number | null; notes: string }[];
-  data_issues: { severity: "info" | "warning"; message: string; source: string }[];
+  data_sources: {
+    file: string;
+    sheet: string;
+    maps_to: string | null;
+    rows: number | null;
+    notes: string;
+  }[];
+  data_issues: {
+    severity: "info" | "warning";
+    message: string;
+    source: string;
+  }[];
   assumptions: string[];
   open_questions: string[];
 }
@@ -499,7 +599,12 @@ export interface FileProfile {
   file: string;
   /** "database": the owner's existing database (connected, read-only). */
   kind: "spreadsheet" | "sql" | "database";
-  sheets: { name: string; rows: number; columns: ColumnProfile[]; notes: string[] }[];
+  sheets: {
+    name: string;
+    rows: number;
+    columns: ColumnProfile[];
+    notes: string[];
+  }[];
   sql_excerpt: string | null;
   error: string | null;
 }
@@ -597,6 +702,8 @@ export interface DesignArtifact {
     recommended?: boolean;
     /** Who drew it: "stitch" when Google Stitch did. */
     made_with?: DesignEngine;
+    /** Google Stitch's own screen for this style, as Stitch drew it (file names). */
+    stitch_original?: { image?: string; html?: string } | null;
     /** The real products whose layout and flow this style follows (from Gagesite's research). */
     inspired_by?: string[];
     /** One sentence: which patterns come from them. */
@@ -607,12 +714,23 @@ export interface DesignArtifact {
     file: string;
     exists: boolean;
   }[];
-  tokens: { palette: DesignPalette; fonts: { display: string; body: string }; radius: string; style_notes?: string } | null;
+  tokens: {
+    palette: DesignPalette;
+    fonts: { display: string; body: string };
+    radius: string;
+    style_notes?: string;
+  } | null;
   components: DesignComponent[];
   /** "components.html" once the library exists. */
   components_file: string | null;
   /** The key pages drawn in this step. */
-  pages: { slug: string; name: string; path: string; file: string; exists: boolean }[];
+  pages: {
+    slug: string;
+    name: string;
+    path: string;
+    file: string;
+    exists: boolean;
+  }[];
   /** Pages built straight in Stage 4 from the component library. */
   later_pages?: { name: string; path: string }[];
   /** Bumps only when a preview file changes. */
@@ -627,7 +745,15 @@ export interface DesignArtifact {
 export interface DesignComponent {
   id: string;
   name: string;
-  group: "Foundations" | "Buttons" | "Forms" | "Navigation" | "Cards" | "Sections" | "Feedback" | string;
+  group:
+    | "Foundations"
+    | "Buttons"
+    | "Forms"
+    | "Navigation"
+    | "Cards"
+    | "Sections"
+    | "Feedback"
+    | string;
   description: string;
   used_on: string[];
 }
@@ -638,7 +764,13 @@ export type RunEvent =
   | { type: "init"; session_id: string; model: string }
   | { type: "text_delta"; text: string }
   | { type: "tool_use"; name: string; summary: string }
-  | { type: "result"; is_error: boolean; cost_usd: number | null; duration_ms: number; num_turns: number }
+  | {
+      type: "result";
+      is_error: boolean;
+      cost_usd: number | null;
+      duration_ms: number;
+      num_turns: number;
+    }
   | { type: "artifact"; ready: boolean; errors: string[] }
   | { type: "done"; status: "succeeded" | "failed" };
 
@@ -712,7 +844,9 @@ function errorText(detail: unknown): string | undefined {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail) && detail.length) {
     const first = detail[0] as { msg?: string; loc?: unknown[] };
-    const field = Array.isArray(first?.loc) ? first.loc.filter((p) => p !== "body").join(" ") : "";
+    const field = Array.isArray(first?.loc)
+      ? first.loc.filter((p) => p !== "body").join(" ")
+      : "";
     if (first?.msg) return field ? `${field}: ${first.msg}` : first.msg;
   }
   return undefined;
@@ -722,7 +856,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // One content-type header whatever the caller passes (two differently written ones would be
   // merged into "application/json, application/json", which the server can't read as JSON).
   const headers = new Headers(init?.headers);
-  if (!headers.has("content-type")) headers.set("content-type", "application/json");
+  if (!headers.has("content-type"))
+    headers.set("content-type", "application/json");
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers,
@@ -730,14 +865,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(errorText(body.detail) ?? `Request failed (${response.status})`);
+    throw new Error(
+      errorText(body.detail) ?? `Request failed (${response.status})`,
+    );
   }
   return response.json();
 }
 
 export interface PreviewInfo {
   /** "offline" is set by the app itself when Gagesite's server doesn't answer. */
-  status: "installing" | "building" | "starting" | "running" | "stopped" | "failed" | "offline";
+  status:
+    | "installing"
+    | "building"
+    | "starting"
+    | "running"
+    | "stopped"
+    | "failed"
+    | "offline";
   /** "dev" while Gagesite builds (changes show at once); "production" once finished: the real build. */
   mode?: "dev" | "production";
   /** Where the running website answers, e.g. http://localhost:3100. */
@@ -759,7 +903,15 @@ export interface BuildPage {
 }
 
 /** Stage 4 as an agent team: the task board and where the team is. */
-export type TeamTaskStatus = "todo" | "building" | "built" | "testing" | "passed" | "bug_found" | "fixing" | "blocked";
+export type TeamTaskStatus =
+  | "todo"
+  | "building"
+  | "built"
+  | "testing"
+  | "passed"
+  | "bug_found"
+  | "fixing"
+  | "blocked";
 export interface TeamBug {
   id: string;
   title: string;
@@ -788,7 +940,13 @@ export interface TeamInfo {
   message: string;
   current: { role?: TeamRole; task?: string; title?: string; run_id?: string };
   /** Two-lane builds: everyone at work right now, one per lane. */
-  lanes?: { lane: "api" | "ui"; role: TeamRole; task?: string; title?: string; run_id?: string }[];
+  lanes?: {
+    lane: "api" | "ui";
+    role: TeamRole;
+    task?: string;
+    title?: string;
+    run_id?: string;
+  }[];
   tasks: TeamTask[];
   inbox: number;
   max_attempts: number;
@@ -833,7 +991,13 @@ export interface BuildSetup {
 /** What the owner chooses; the rest of BuildSetup is worked out by the backend. */
 export type BuildSetupChoice = Pick<
   BuildSetup,
-  "setup" | "api_language" | "api_base_url" | "api_docs_url" | "api_auth" | "api_notes" | "landing_style"
+  | "setup"
+  | "api_language"
+  | "api_base_url"
+  | "api_docs_url"
+  | "api_auth"
+  | "api_notes"
+  | "landing_style"
 >;
 
 export type LandingStyle = "modern" | "3d" | "video";
@@ -841,14 +1005,15 @@ export type LandingStyle = "modern" | "3d" | "video";
 /** What a project is: a full website (five stages) or one landing page (a brief, then the build). */
 export type ProjectKind = "website" | "landing";
 /** A website's build setup chosen at the start ("unsure": recommended after the plan). */
-export type StartSetup = "unsure" | "all_in_one" | "api_service" | "static_external";
+export type StartSetup =
+  "unsure" | "all_in_one" | "api_service" | "static_external";
 
 /** A landing page's short brief, in place of Plan, Database and UI Design. */
 export interface LandingBriefInput {
   business_name: string;
   offer: string;
   industry?: string;
-  main_action: string;
+  main_action?: string;
   main_action_link?: string;
   facts?: string;
   contact?: string;
@@ -884,13 +1049,39 @@ export interface Storyboard {
   mood?: { palette?: string[]; type?: string; light?: string; pace?: string };
   showpiece?: string;
   sections: StoryboardSection[];
-  system?: Record<"motion" | "layout" | "components" | "interaction" | "responsive", unknown>;
+  system?: Record<
+    "motion" | "layout" | "components" | "interaction" | "responsive",
+    unknown
+  >;
   assets_needed?: string[];
   notes_for_owner?: string;
 }
 
+/** One of the looks the Motion Director offers before the storyboard (docs/04-directions.json). */
+export interface Direction {
+  id: string;
+  name: string;
+  line: string;
+  big_idea: string;
+  type?: { display?: string; body?: string };
+  palette?: string[];
+  layout?: string;
+  hero?: string;
+  signature_motion?: string;
+  feels_like?: string;
+  differs_from_others?: string;
+}
+
+export interface Directions {
+  status: "choose" | "chosen";
+  directions: Direction[];
+  chosen?: string;
+  owner_note?: string;
+}
+
 export interface StoryboardInfo {
   storyboard: Storyboard | null;
+  directions: Directions | null;
   markdown: string | null;
   approved: boolean;
   build_started: boolean;
@@ -981,7 +1172,13 @@ export interface ApiServerInfo {
   database: { provider: string; host: string; database: string } | null;
   target: "this_pc" | "ssh";
   /** Your own server: where Gagesite signs in with its own key (the public half is shown to add there). */
-  server: { host: string | null; ssh_port: number | null; user: string | null; public_key: string | null; connected: boolean } | null;
+  server: {
+    host: string | null;
+    ssh_port: number | null;
+    user: string | null;
+    public_key: string | null;
+    connected: boolean;
+  } | null;
   /** The website is online on Vercel: a new API address is given to it too. */
   website_live: boolean;
   port: number;
@@ -989,7 +1186,12 @@ export interface ApiServerInfo {
   status: "idle" | "running" | "live" | "failed" | "stopped";
   url: string | null;
   docs_url: string | null;
-  steps: { key: string; label: string; status: DeployStep["status"]; detail: string }[];
+  steps: {
+    key: string;
+    label: string;
+    status: DeployStep["status"];
+    detail: string;
+  }[];
   error: string | null;
   log: string | null;
   /** Why the last attempt started: the owner pressed the button, or a change was put online by itself. */
@@ -1055,51 +1257,59 @@ export interface DeployArtifact {
 
 export const api = {
   listProjects: () => request<Project[]>("/api/projects"),
-  createProject: (name: string, kind: ProjectKind = "website", setup: StartSetup = "unsure") =>
-    request<Project>("/api/projects", { method: "POST", body: JSON.stringify({ name, kind, setup }) }),
+  createProject: (
+    name: string,
+    kind: ProjectKind = "website",
+    setup: StartSetup = "unsure",
+  ) =>
+    request<Project>("/api/projects", {
+      method: "POST",
+      body: JSON.stringify({ name, kind, setup }),
+    }),
+  switchToLanding: (id: string) =>
+    request<{ ok: boolean; next: string }>(`/api/projects/${id}/to-landing`, {
+      method: "POST",
+    }),
   getLandingBrief: (id: string) =>
-    request<{ brief: (LandingBriefInput & { languages: string[] }) | null; locked: boolean }>(
-      `/api/projects/${id}/landing-brief`,
-    ),
+    request<{
+      brief: (LandingBriefInput & { languages: string[] }) | null;
+      suggested: {
+        business_name: string;
+        offer: string;
+        location: string;
+      } | null;
+      locked: boolean;
+    }>(`/api/projects/${id}/landing-brief`),
   submitLandingBrief: (id: string, brief: LandingBriefInput) =>
-    request<{ ok: boolean; next: string }>(`/api/projects/${id}/landing-brief`, {
-      method: "POST",
-      body: JSON.stringify(brief),
-    }),
-  deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
+    request<{ ok: boolean; next: string }>(
+      `/api/projects/${id}/landing-brief`,
+      {
+        method: "POST",
+        body: JSON.stringify(brief),
+      },
+    ),
+  deleteProject: (id: string) =>
+    request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
   getProject: (id: string) => request<ProjectDetail>(`/api/projects/${id}`),
-  getMessages: (id: string, stage: string) => request<Message[]>(`/api/projects/${id}/stages/${stage}/messages`),
-  sendMessage: (id: string, stage: string, content: string, attachments: string[] = []) =>
-    request<{ run_id: string | null; queued?: boolean }>(`/api/projects/${id}/stages/${stage}/messages`, {
-      method: "POST",
-      body: JSON.stringify({ content, attachments }),
-    }),
+  getMessages: (id: string, stage: string) =>
+    request<Message[]>(`/api/projects/${id}/stages/${stage}/messages`),
+  sendMessage: (
+    id: string,
+    stage: string,
+    content: string,
+    attachments: string[] = [],
+  ) =>
+    request<{ run_id: string | null; queued?: boolean }>(
+      `/api/projects/${id}/stages/${stage}/messages`,
+      {
+        method: "POST",
+        body: JSON.stringify({ content, attachments }),
+      },
+    ),
   uploadChatFile: async (id: string, file: File) => {
     const body = new FormData();
     body.append("file", file, file.name || "screenshot.png");
-    const response = await fetch(`${API_URL}/api/projects/${id}/chat-files`, { method: "POST", body });
-    if (!response.ok) {
-      const detail = await response.json().catch(() => ({}));
-      throw new Error(detail.detail ?? `Upload failed (${response.status})`);
-    }
-    return (await response.json()) as ChatFile;
-  },
-  chatFileUrl: (id: string, file: string) => `${API_URL}/api/projects/${id}/chat-files/${encodeURIComponent(file)}`,
-  /** No database: writes the simple-site design from the plan and approves Stage 2 at once. */
-  chooseSimpleSite: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}/stages/02-database/simple`, { method: "POST" }),
-  /** Start a stage over: clears its outputs and conversation (uploaded files are kept). */
-  resetStage: (id: string, stage: string) =>
-    request<{ ok: boolean }>(`/api/projects/${id}/stages/${stage}/reset`, { method: "POST" }),
-  getScope: (id: string) =>
-    request<ScopeArtifact>(`/api/projects/${id}/stages/01-scope/artifact`).then((a) => ({
-      ...a,
-      data: a.data ? normalizeScope(a.data) : null,
-    })),
-  uploadContentFiles: async (id: string, index: number, item: string, files: File[]) => {
-    const body = new FormData();
-    body.append("item", item);
-    files.forEach((file) => body.append("files", file));
-    const response = await fetch(`${API_URL}/api/projects/${id}/stages/01-scope/content/${index}/files`, {
+    const response = await fetch(`${API_URL}/api/projects/${id}/chat-files`, {
       method: "POST",
       body,
     });
@@ -1107,25 +1317,81 @@ export const api = {
       const detail = await response.json().catch(() => ({}));
       throw new Error(detail.detail ?? `Upload failed (${response.status})`);
     }
+    return (await response.json()) as ChatFile;
+  },
+  chatFileUrl: (id: string, file: string) =>
+    `${API_URL}/api/projects/${id}/chat-files/${encodeURIComponent(file)}`,
+  /** No database: writes the simple-site design from the plan and approves Stage 2 at once. */
+  chooseSimpleSite: (id: string) =>
+    request<{ ok: boolean }>(`/api/projects/${id}/stages/02-database/simple`, {
+      method: "POST",
+    }),
+  /** Start a stage over: clears its outputs and conversation (uploaded files are kept). */
+  resetStage: (id: string, stage: string) =>
+    request<{ ok: boolean }>(`/api/projects/${id}/stages/${stage}/reset`, {
+      method: "POST",
+    }),
+  getScope: (id: string) =>
+    request<ScopeArtifact>(`/api/projects/${id}/stages/01-scope/artifact`).then(
+      (a) => ({
+        ...a,
+        data: a.data ? normalizeScope(a.data) : null,
+      }),
+    ),
+  uploadContentFiles: async (
+    id: string,
+    index: number,
+    item: string,
+    files: File[],
+  ) => {
+    const body = new FormData();
+    body.append("item", item);
+    files.forEach((file) => body.append("files", file));
+    const response = await fetch(
+      `${API_URL}/api/projects/${id}/stages/01-scope/content/${index}/files`,
+      {
+        method: "POST",
+        body,
+      },
+    );
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.detail ?? `Upload failed (${response.status})`);
+    }
     const a = (await response.json()) as ScopeArtifact;
     return { ...a, data: a.data ? normalizeScope(a.data) : null };
   },
-  chooseContent: (id: string, index: number, item: string, status: "needed" | "placeholder") =>
-    request<ScopeArtifact>(`/api/projects/${id}/stages/01-scope/content/${index}`, {
-      method: "PUT",
-      body: JSON.stringify({ item, status }),
-    }).then((a) => ({ ...a, data: a.data ? normalizeScope(a.data) : null })),
+  chooseContent: (
+    id: string,
+    index: number,
+    item: string,
+    status: "needed" | "placeholder",
+  ) =>
+    request<ScopeArtifact>(
+      `/api/projects/${id}/stages/01-scope/content/${index}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ item, status }),
+      },
+    ).then((a) => ({ ...a, data: a.data ? normalizeScope(a.data) : null })),
   saveScopeDetails: (id: string, details: ScopeDetails) =>
     request<ScopeArtifact>(`/api/projects/${id}/stages/01-scope/details`, {
       method: "PUT",
       body: JSON.stringify(details),
     }).then((a) => ({ ...a, data: a.data ? normalizeScope(a.data) : null })),
-  getDatabase: (id: string) => request<DatabaseArtifact>(`/api/projects/${id}/stages/02-database/artifact`),
-  listUploads: (id: string) => request<FileProfile[]>(`/api/projects/${id}/uploads`),
+  getDatabase: (id: string) =>
+    request<DatabaseArtifact>(
+      `/api/projects/${id}/stages/02-database/artifact`,
+    ),
+  listUploads: (id: string) =>
+    request<FileProfile[]>(`/api/projects/${id}/uploads`),
   uploadFile: async (id: string, file: File) => {
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`${API_URL}/api/projects/${id}/uploads`, { method: "POST", body });
+    const response = await fetch(`${API_URL}/api/projects/${id}/uploads`, {
+      method: "POST",
+      body,
+    });
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
       throw new Error(detail.detail ?? `Upload failed (${response.status})`);
@@ -1133,36 +1399,62 @@ export const api = {
     return (await response.json()) as FileProfile[];
   },
   deleteUpload: (id: string, filename: string) =>
-    request<FileProfile[]>(`/api/projects/${id}/uploads/${encodeURIComponent(filename)}`, { method: "DELETE" }),
+    request<FileProfile[]>(
+      `/api/projects/${id}/uploads/${encodeURIComponent(filename)}`,
+      { method: "DELETE" },
+    ),
   approve: (id: string, stage: string) =>
-    request<{ ok: boolean }>(`/api/projects/${id}/stages/${stage}/approve`, { method: "POST" }),
-  reopen: (id: string, stage: string) =>
-    request<{ ok: boolean }>(`/api/projects/${id}/stages/${stage}/reopen`, { method: "POST" }),
-  getConnection: (id: string) => request<DbConnection | null>(`/api/projects/${id}/database-connection`),
-  /** An existing database to design around in Stage 2 (read only; never where the site's data lives). */
-  getSourceDatabase: (id: string) => request<SourceDb | null>(`/api/projects/${id}/source-database`),
-  connectSourceDatabase: (id: string, provider: DbProvider, url: string) =>
-    request<{ source: SourceDb; uploads: FileProfile[] }>(`/api/projects/${id}/source-database`, {
-      method: "PUT",
-      body: JSON.stringify({ provider, url }),
+    request<{ ok: boolean }>(`/api/projects/${id}/stages/${stage}/approve`, {
+      method: "POST",
     }),
+  reopen: (id: string, stage: string) =>
+    request<{ ok: boolean }>(`/api/projects/${id}/stages/${stage}/reopen`, {
+      method: "POST",
+    }),
+  getConnection: (id: string) =>
+    request<DbConnection | null>(`/api/projects/${id}/database-connection`),
+  /** An existing database to design around in Stage 2 (read only; never where the site's data lives). */
+  getSourceDatabase: (id: string) =>
+    request<SourceDb | null>(`/api/projects/${id}/source-database`),
+  connectSourceDatabase: (id: string, provider: DbProvider, url: string) =>
+    request<{ source: SourceDb; uploads: FileProfile[] }>(
+      `/api/projects/${id}/source-database`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ provider, url }),
+      },
+    ),
   disconnectSourceDatabase: (id: string) =>
-    request<{ source: null; uploads: FileProfile[] }>(`/api/projects/${id}/source-database`, { method: "DELETE" }),
+    request<{ source: null; uploads: FileProfile[] }>(
+      `/api/projects/${id}/source-database`,
+      { method: "DELETE" },
+    ),
   testConnection: (id: string, provider: DbProvider, url: string) =>
     request<ConnectionTest>(`/api/projects/${id}/database-connection/test`, {
       method: "POST",
       body: JSON.stringify({ provider, url }),
     }),
-  retestConnection: (id: string) => request<ConnectionTest>(`/api/projects/${id}/database-connection/retest`, { method: "POST" }),
+  retestConnection: (id: string) =>
+    request<ConnectionTest>(`/api/projects/${id}/database-connection/retest`, {
+      method: "POST",
+    }),
   saveConnection: (id: string, provider: DbProvider, url: string) =>
     request<DbConnection>(`/api/projects/${id}/database-connection`, {
       method: "PUT",
       body: JSON.stringify({ provider, url }),
     }),
-  getDataOverview: (id: string) => request<DataOverview>(`/api/projects/${id}/data`),
+  getDataOverview: (id: string) =>
+    request<DataOverview>(`/api/projects/${id}/data`),
   getDataRows: (
     id: string,
-    q: { table: string; source: "db" | "file"; file?: string; sheet?: string; offset: number; limit: number },
+    q: {
+      table: string;
+      source: "db" | "file";
+      file?: string;
+      sheet?: string;
+      offset: number;
+      limit: number;
+    },
   ) => {
     const params = new URLSearchParams({
       table: q.table,
@@ -1174,11 +1466,15 @@ export const api = {
     });
     return request<DataPage>(`/api/projects/${id}/data/rows?${params}`);
   },
-  importSources: (id: string) => request<ImportSources>(`/api/projects/${id}/data/import/sources`),
+  importSources: (id: string) =>
+    request<ImportSources>(`/api/projects/${id}/data/import/sources`),
   importUpload: async (id: string, file: File) => {
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`${API_URL}/api/projects/${id}/data/import/file`, { method: "POST", body });
+    const response = await fetch(
+      `${API_URL}/api/projects/${id}/data/import/file`,
+      { method: "POST", body },
+    );
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
       throw new Error(detail.detail ?? `Upload failed (${response.status})`);
@@ -1186,114 +1482,266 @@ export const api = {
     return (await response.json()) as ImportFile;
   },
   importForget: (id: string, fileId: string) =>
-    request<null>(`/api/projects/${id}/data/import/file/${encodeURIComponent(fileId)}`, { method: "DELETE" }),
+    request<null>(
+      `/api/projects/${id}/data/import/file/${encodeURIComponent(fileId)}`,
+      { method: "DELETE" },
+    ),
   importPlan: (id: string, table: string, source: ImportSource) =>
-    request<ImportPlan>(`/api/projects/${id}/data/import/plan`, { method: "POST", body: JSON.stringify({ table, source }) }),
-  importCheck: (id: string, table: string, source: ImportSource, mapping: ImportMapping[]) =>
+    request<ImportPlan>(`/api/projects/${id}/data/import/plan`, {
+      method: "POST",
+      body: JSON.stringify({ table, source }),
+    }),
+  importCheck: (
+    id: string,
+    table: string,
+    source: ImportSource,
+    mapping: ImportMapping[],
+  ) =>
     request<ImportCheck>(`/api/projects/${id}/data/import/check`, {
       method: "POST",
       body: JSON.stringify({ table, source, mapping }),
     }),
-  importRun: (id: string, table: string, source: ImportSource, mapping: ImportMapping[]) =>
-    request<ImportJob>(`/api/projects/${id}/data/import/run`, { method: "POST", body: JSON.stringify({ table, source, mapping }) }),
-  importStatus: (id: string) => request<ImportJob | null>(`/api/projects/${id}/data/import/status`),
+  importRun: (
+    id: string,
+    table: string,
+    source: ImportSource,
+    mapping: ImportMapping[],
+  ) =>
+    request<ImportJob>(`/api/projects/${id}/data/import/run`, {
+      method: "POST",
+      body: JSON.stringify({ table, source, mapping }),
+    }),
+  importStatus: (id: string) =>
+    request<ImportJob | null>(`/api/projects/${id}/data/import/status`),
   getConnectionTables: (id: string) =>
-    request<{ design: string[]; existing: string[]; other_tables: number; supabase_ref: string | null }>(
-      `/api/projects/${id}/database-connection/tables`,
+    request<{
+      design: string[];
+      existing: string[];
+      other_tables: number;
+      supabase_ref: string | null;
+    }>(`/api/projects/${id}/database-connection/tables`),
+  getSqlPreview: (id: string) =>
+    request<{ sql: string }>(
+      `/api/projects/${id}/database-connection/sql-preview`,
     ),
-  getSqlPreview: (id: string) => request<{ sql: string }>(`/api/projects/${id}/database-connection/sql-preview`),
   createTables: (id: string) =>
-    request<{ created: string[] }>(`/api/projects/${id}/database-connection/create-tables`, { method: "POST" }),
-  deleteConnection: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}/database-connection`, { method: "DELETE" }),
-  getDesign: (id: string) => request<DesignArtifact>(`/api/projects/${id}/stages/03-design/artifact`),
-  getDesignPlan: (id: string) => request<DesignPlanInfo>(`/api/projects/${id}/design/plan`),
+    request<{ created: string[] }>(
+      `/api/projects/${id}/database-connection/create-tables`,
+      { method: "POST" },
+    ),
+  deleteConnection: (id: string) =>
+    request<{ ok: boolean }>(`/api/projects/${id}/database-connection`, {
+      method: "DELETE",
+    }),
+  getDesign: (id: string) =>
+    request<DesignArtifact>(`/api/projects/${id}/stages/03-design/artifact`),
+  getDesignPlan: (id: string) =>
+    request<DesignPlanInfo>(`/api/projects/${id}/design/plan`),
   approveDesignPlan: (id: string) =>
-    request<{ plan: DesignPlan }>(`/api/projects/${id}/design/plan/approve`, { method: "POST" }),
+    request<{ plan: DesignPlan }>(`/api/projects/${id}/design/plan/approve`, {
+      method: "POST",
+    }),
   reopenDesignPlan: (id: string) =>
-    request<{ plan: DesignPlan }>(`/api/projects/${id}/design/plan/reopen`, { method: "POST" }),
-  stopRun: (runId: string) => request<{ ok: boolean }>(`/api/runs/${runId}/stop`, { method: "POST" }),
-  getBuild: (id: string) => request<BuildArtifact>(`/api/projects/${id}/stages/04-build/artifact`),
-  getBuildSetup: (id: string) => request<BuildSetup>(`/api/projects/${id}/build/setup`),
+    request<{ plan: DesignPlan }>(`/api/projects/${id}/design/plan/reopen`, {
+      method: "POST",
+    }),
+  stopRun: (runId: string) =>
+    request<{ ok: boolean }>(`/api/runs/${runId}/stop`, { method: "POST" }),
+  getBuild: (id: string) =>
+    request<BuildArtifact>(`/api/projects/${id}/stages/04-build/artifact`),
+  getBuildSetup: (id: string) =>
+    request<BuildSetup>(`/api/projects/${id}/build/setup`),
   putBuildSetup: (id: string, choice: BuildSetupChoice) =>
-    request<BuildSetup>(`/api/projects/${id}/build/setup`, { method: "PUT", body: JSON.stringify(choice) }),
+    request<BuildSetup>(`/api/projects/${id}/build/setup`, {
+      method: "PUT",
+      body: JSON.stringify(choice),
+    }),
   uploadLandingVideo: async (id: string, file: File) => {
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`${API_URL}/api/projects/${id}/build/landing-video`, { method: "POST", body });
+    const response = await fetch(
+      `${API_URL}/api/projects/${id}/build/landing-video`,
+      { method: "POST", body },
+    );
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
-      throw new Error(errorText(detail.detail) || `Upload failed (${response.status})`);
+      throw new Error(
+        errorText(detail.detail) || `Upload failed (${response.status})`,
+      );
     }
     return (await response.json()) as BuildSetup;
   },
-  getStoryboard: (id: string) => request<StoryboardInfo>(`/api/projects/${id}/build/storyboard`),
+  getStoryboard: (id: string) =>
+    request<StoryboardInfo>(`/api/projects/${id}/build/storyboard`),
+  chooseDirection: (id: string, direction: string, note: string) =>
+    request<StoryboardInfo>(`/api/projects/${id}/build/directions/choose`, {
+      method: "POST",
+      body: JSON.stringify({ id: direction, note }),
+    }),
   approveStoryboard: (id: string) =>
-    request<StoryboardInfo>(`/api/projects/${id}/build/storyboard/approve`, { method: "POST" }),
+    request<StoryboardInfo>(`/api/projects/${id}/build/storyboard/approve`, {
+      method: "POST",
+    }),
   getFlow: () => request<FlowStatus>(`/api/flow`),
-  flowSignIn: () => request<FlowStatus>(`/api/flow/sign-in`, { method: "POST" }),
+  flowSignIn: () =>
+    request<FlowStatus>(`/api/flow/sign-in`, { method: "POST" }),
   flowCheck: () => request<FlowStatus>(`/api/flow/check`, { method: "POST" }),
   generateLandingVideo: (id: string, p: VideoPrompt) =>
     request<FlowJob>(`/api/projects/${id}/build/landing-video/generate`, {
       method: "POST",
-      body: JSON.stringify({ prompt: p.prompt, aspect: p.aspect, seconds: p.seconds }),
+      body: JSON.stringify({
+        prompt: p.prompt,
+        aspect: p.aspect,
+        seconds: p.seconds,
+      }),
     }),
-  landingVideoJobs: (id: string) => request<FlowJob[]>(`/api/projects/${id}/build/landing-video/jobs`),
+  landingVideoJobs: (id: string) =>
+    request<FlowJob[]>(`/api/projects/${id}/build/landing-video/jobs`),
   deleteLandingVideo: (id: string) =>
-    request<BuildSetup>(`/api/projects/${id}/build/landing-video`, { method: "DELETE" }),
+    request<BuildSetup>(`/api/projects/${id}/build/landing-video`, {
+      method: "DELETE",
+    }),
   /** Skip UI Design and build a landing page instead (Stage 4 designs it). */
-  skipDesign: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}/design/skip`, { method: "POST" }),
-  getTeam: (id: string) => request<TeamInfo | null>(`/api/projects/${id}/build/team`),
+  skipDesign: (id: string) =>
+    request<{ ok: boolean }>(`/api/projects/${id}/design/skip`, {
+      method: "POST",
+    }),
+  getTeam: (id: string) =>
+    request<TeamInfo | null>(`/api/projects/${id}/build/team`),
   startTeam: (id: string, retryBlocked = false) =>
     request<TeamInfo>(`/api/projects/${id}/build/team/start`, {
       method: "POST",
       body: JSON.stringify({ retry_blocked: retryBlocked }),
     }),
-  pauseTeam: (id: string) => request<TeamInfo | null>(`/api/projects/${id}/build/team/pause`, { method: "POST" }),
-  getPreview: (id: string) => request<PreviewInfo>(`/api/projects/${id}/build/preview`),
-  startPreview: (id: string) => request<PreviewInfo>(`/api/projects/${id}/build/preview/start`, { method: "POST" }),
-  stopPreview: (id: string) => request<PreviewInfo>(`/api/projects/${id}/build/preview/stop`, { method: "POST" }),
-  runCheck: (id: string) => request<{ check: BuildCheck | null }>(`/api/projects/${id}/build/screens`, { method: "POST" }),
-  getGitHub: (id: string) => request<GitHubInfo | null>(`/api/projects/${id}/github`),
+  pauseTeam: (id: string) =>
+    request<TeamInfo | null>(`/api/projects/${id}/build/team/pause`, {
+      method: "POST",
+    }),
+  getPreview: (id: string) =>
+    request<PreviewInfo>(`/api/projects/${id}/build/preview`),
+  startPreview: (id: string) =>
+    request<PreviewInfo>(`/api/projects/${id}/build/preview/start`, {
+      method: "POST",
+    }),
+  stopPreview: (id: string) =>
+    request<PreviewInfo>(`/api/projects/${id}/build/preview/stop`, {
+      method: "POST",
+    }),
+  runCheck: (id: string) =>
+    request<{ check: BuildCheck | null }>(`/api/projects/${id}/build/screens`, {
+      method: "POST",
+    }),
+  getGitHub: (id: string) =>
+    request<GitHubInfo | null>(`/api/projects/${id}/github`),
   connectGitHub: (id: string, repo: string, token: string) =>
-    request<GitHubInfo>(`/api/projects/${id}/github`, { method: "PUT", body: JSON.stringify({ repo, token }) }),
-  disconnectGitHub: (id: string) => request<null>(`/api/projects/${id}/github`, { method: "DELETE" }),
-  pushGitHub: (id: string) => request<GitHubInfo>(`/api/projects/${id}/github/push`, { method: "POST" }),
-  getApiServer: (id: string) => request<ApiServerInfo>(`/api/projects/${id}/api-server`),
+    request<GitHubInfo>(`/api/projects/${id}/github`, {
+      method: "PUT",
+      body: JSON.stringify({ repo, token }),
+    }),
+  disconnectGitHub: (id: string) =>
+    request<null>(`/api/projects/${id}/github`, { method: "DELETE" }),
+  pushGitHub: (id: string) =>
+    request<GitHubInfo>(`/api/projects/${id}/github/push`, { method: "POST" }),
+  getApiServer: (id: string) =>
+    request<ApiServerInfo>(`/api/projects/${id}/api-server`),
   saveApiServer: (
     id: string,
-    body: { target?: string; port?: number; auto_update?: boolean; ssh_host?: string; ssh_port?: number; ssh_user?: string },
+    body: {
+      target?: string;
+      port?: number;
+      auto_update?: boolean;
+      ssh_host?: string;
+      ssh_port?: number;
+      ssh_user?: string;
+    },
   ) =>
-    request<ApiServerInfo>(`/api/projects/${id}/api-server`, { method: "PUT", body: JSON.stringify(body) }),
+    request<ApiServerInfo>(`/api/projects/${id}/api-server`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
   apiServerKey: (id: string) =>
-    request<{ public_key: string }>(`/api/projects/${id}/api-server/ssh-key`, { method: "POST" }),
-  deployApiServer: (id: string) => request<ApiServerInfo>(`/api/projects/${id}/api-server/deploy`, { method: "POST" }),
-  stopApiServer: (id: string) => request<ApiServerInfo>(`/api/projects/${id}/api-server/stop`, { method: "POST" }),
-  getDeploy: (id: string) => request<DeployArtifact>(`/api/projects/${id}/stages/05-deploy/artifact`),
-  getVercel: (id: string) => request<VercelInfo | null>(`/api/projects/${id}/vercel`),
+    request<{ public_key: string }>(`/api/projects/${id}/api-server/ssh-key`, {
+      method: "POST",
+    }),
+  deployApiServer: (id: string) =>
+    request<ApiServerInfo>(`/api/projects/${id}/api-server/deploy`, {
+      method: "POST",
+    }),
+  stopApiServer: (id: string) =>
+    request<ApiServerInfo>(`/api/projects/${id}/api-server/stop`, {
+      method: "POST",
+    }),
+  getDeploy: (id: string) =>
+    request<DeployArtifact>(`/api/projects/${id}/stages/05-deploy/artifact`),
+  getVercel: (id: string) =>
+    request<VercelInfo | null>(`/api/projects/${id}/vercel`),
   connectVercel: (id: string, token: string) =>
-    request<VercelInfo>(`/api/projects/${id}/vercel`, { method: "PUT", body: JSON.stringify({ token }) }),
-  disconnectVercel: (id: string) => request<null>(`/api/projects/${id}/vercel`, { method: "DELETE" }),
-  takeOffline: (id: string) => request<DeployArtifact>(`/api/projects/${id}/deploy/offline`, { method: "POST" }),
-  backOnline: (id: string) => request<DeployArtifact>(`/api/projects/${id}/deploy/back-online`, { method: "POST" }),
+    request<VercelInfo>(`/api/projects/${id}/vercel`, {
+      method: "PUT",
+      body: JSON.stringify({ token }),
+    }),
+  disconnectVercel: (id: string) =>
+    request<null>(`/api/projects/${id}/vercel`, { method: "DELETE" }),
+  takeOffline: (id: string) =>
+    request<DeployArtifact>(`/api/projects/${id}/deploy/offline`, {
+      method: "POST",
+    }),
+  backOnline: (id: string) =>
+    request<DeployArtifact>(`/api/projects/${id}/deploy/back-online`, {
+      method: "POST",
+    }),
   saveDeploySettings: (id: string, values: Record<string, string>) =>
-    request<DeployArtifact>(`/api/projects/${id}/deploy/settings`, { method: "PUT", body: JSON.stringify({ values }) }),
-  getFirstLogin: (id: string) => request<{ email: string; password: string }>(`/api/projects/${id}/deploy/first-login`),
-  goOnline: (id: string, owner: { email: string; name: string; password: string } | null) =>
-    request<{ ok: boolean }>(`/api/projects/${id}/deploy`, { method: "POST", body: JSON.stringify({ owner }) }),
-  getDesignKit: (id: string) => request<DesignKit>(`/api/projects/${id}/design-kit`),
+    request<DeployArtifact>(`/api/projects/${id}/deploy/settings`, {
+      method: "PUT",
+      body: JSON.stringify({ values }),
+    }),
+  getFirstLogin: (id: string) =>
+    request<{ email: string; password: string }>(
+      `/api/projects/${id}/deploy/first-login`,
+    ),
+  goOnline: (
+    id: string,
+    owner: { email: string; name: string; password: string } | null,
+  ) =>
+    request<{ ok: boolean }>(`/api/projects/${id}/deploy`, {
+      method: "POST",
+      body: JSON.stringify({ owner }),
+    }),
+  getDesignKit: (id: string) =>
+    request<DesignKit>(`/api/projects/${id}/design-kit`),
   getStitch: () => request<StitchStatus>("/api/stitch"),
-  connectStitch: (key: string) => request<StitchStatus>("/api/stitch", { method: "PUT", body: JSON.stringify({ key }) }),
-  disconnectStitch: () => request<StitchStatus>("/api/stitch", { method: "DELETE" }),
+  connectStitch: (key: string) =>
+    request<StitchStatus>("/api/stitch", {
+      method: "PUT",
+      body: JSON.stringify({ key }),
+    }),
+  disconnectStitch: () =>
+    request<StitchStatus>("/api/stitch", { method: "DELETE" }),
   putDesignKit: (
     id: string,
-    settings: Pick<DesignKit, "colors" | "style_notes" | "avoid" | "mockup_format" | "showcase_3d" | "design_engine">,
+    settings: Pick<
+      DesignKit,
+      | "colors"
+      | "style_notes"
+      | "avoid"
+      | "mockup_format"
+      | "showcase_3d"
+      | "design_engine"
+    >,
   ) =>
-    request<DesignKit>(`/api/projects/${id}/design-kit`, { method: "PUT", body: JSON.stringify(settings) }),
-  listSources: (id: string) => request<SourceDoc[]>(`/api/projects/${id}/sources`),
+    request<DesignKit>(`/api/projects/${id}/design-kit`, {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
+  listSources: (id: string) =>
+    request<SourceDoc[]>(`/api/projects/${id}/sources`),
   uploadSource: async (id: string, file: File) => {
     const body = new FormData();
     body.append("file", file);
-    const response = await fetch(`${API_URL}/api/projects/${id}/sources`, { method: "POST", body });
+    const response = await fetch(`${API_URL}/api/projects/${id}/sources`, {
+      method: "POST",
+      body,
+    });
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
       throw new Error(detail.detail ?? `Upload failed (${response.status})`);
@@ -1302,18 +1750,32 @@ export const api = {
   },
   /** Opens a website (the owner's or one they like) and saves its text and a screenshot for the plan. */
   addSourceLink: (id: string, url: string) =>
-    request<{ name: string; url: string; title: string }>(`/api/projects/${id}/sources/link`, {
-      method: "POST",
-      body: JSON.stringify({ url }),
-    }),
+    request<{ name: string; url: string; title: string }>(
+      `/api/projects/${id}/sources/link`,
+      {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      },
+    ),
   deleteSource: (id: string, file: string) =>
-    request<SourceDoc[]>(`/api/projects/${id}/sources/${encodeURIComponent(file)}`, { method: "DELETE" }),
-  uploadDesignFile: async (id: string, kind: DesignFileKind, file: File, tag: PhotoTag = "other") => {
+    request<SourceDoc[]>(
+      `/api/projects/${id}/sources/${encodeURIComponent(file)}`,
+      { method: "DELETE" },
+    ),
+  uploadDesignFile: async (
+    id: string,
+    kind: DesignFileKind,
+    file: File,
+    tag: PhotoTag = "other",
+  ) => {
     const body = new FormData();
     body.append("kind", kind);
     body.append("tag", tag);
     body.append("file", file);
-    const response = await fetch(`${API_URL}/api/projects/${id}/design-kit/files`, { method: "POST", body });
+    const response = await fetch(
+      `${API_URL}/api/projects/${id}/design-kit/files`,
+      { method: "POST", body },
+    );
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
       throw new Error(detail.detail ?? `Upload failed (${response.status})`);
@@ -1321,27 +1783,55 @@ export const api = {
     return (await response.json()) as DesignKit;
   },
   tagDesignPhoto: (id: string, file: string, tag: PhotoTag) =>
-    request<DesignKit>(`/api/projects/${id}/design-kit/photos/${encodeURIComponent(file)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ tag }),
-    }),
+    request<DesignKit>(
+      `/api/projects/${id}/design-kit/photos/${encodeURIComponent(file)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ tag }),
+      },
+    ),
   deleteDesignFile: (id: string, kind: DesignFileKind, file: string) =>
-    request<DesignKit>(`/api/projects/${id}/design-kit/files/${kind}/${encodeURIComponent(file)}`, { method: "DELETE" }),
+    request<DesignKit>(
+      `/api/projects/${id}/design-kit/files/${kind}/${encodeURIComponent(file)}`,
+      { method: "DELETE" },
+    ),
   /** Mockups and the owner's images, served by the backend (mockups go in a sandboxed iframe). */
-  previewUrl: (id: string, path: string) => `${API_URL}/api/projects/${id}/preview/${path}`,
+  stitchOriginalUrl: (id: string, name: string) =>
+    `${API_URL}/api/projects/${id}/design/stitch/${encodeURIComponent(name)}`,
+  previewUrl: (id: string, path: string) =>
+    `${API_URL}/api/projects/${id}/preview/${path}`,
   downloadUrl: (id: string) => `${API_URL}/api/projects/${id}/download`,
   getKeys: (id: string) => request<ProjectKeys>(`/api/projects/${id}/keys`),
   setKeys: (id: string, values: Record<string, string>) =>
-    request<ProjectKeys>(`/api/projects/${id}/keys`, { method: "PUT", body: JSON.stringify({ values }) }),
-  addKey: (id: string, key: { name: string; purpose: string; secret: boolean; value: string }) =>
-    request<ProjectKeys>(`/api/projects/${id}/keys`, { method: "POST", body: JSON.stringify(key) }),
-  editKey: (id: string, name: string, key: { name: string; purpose: string; secret: boolean }) =>
-    request<ProjectKeys>(`/api/projects/${id}/keys/${encodeURIComponent(name)}`, {
-      method: "PATCH",
+    request<ProjectKeys>(`/api/projects/${id}/keys`, {
+      method: "PUT",
+      body: JSON.stringify({ values }),
+    }),
+  addKey: (
+    id: string,
+    key: { name: string; purpose: string; secret: boolean; value: string },
+  ) =>
+    request<ProjectKeys>(`/api/projects/${id}/keys`, {
+      method: "POST",
       body: JSON.stringify(key),
     }),
+  editKey: (
+    id: string,
+    name: string,
+    key: { name: string; purpose: string; secret: boolean },
+  ) =>
+    request<ProjectKeys>(
+      `/api/projects/${id}/keys/${encodeURIComponent(name)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(key),
+      },
+    ),
   removeKey: (id: string, name: string) =>
-    request<ProjectKeys>(`/api/projects/${id}/keys/${encodeURIComponent(name)}`, { method: "DELETE" }),
+    request<ProjectKeys>(
+      `/api/projects/${id}/keys/${encodeURIComponent(name)}`,
+      { method: "DELETE" },
+    ),
   getClaudeAccounts: () => request<ClaudeAccounts>("/api/claude/accounts"),
   addClaudeAccount: (name: string, token: string) =>
     request<ClaudeAccounts>("/api/claude/accounts", {
@@ -1353,9 +1843,14 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ id }),
     }),
-  removeClaudeAccount: (id: string) => request<ClaudeAccounts>(`/api/claude/accounts/${id}`, { method: "DELETE" }),
-  getFlowchart: (id: string) => request<FlowchartInfo>(`/api/projects/${id}/scope/flowchart`),
-  generateFlowchart: (id: string) => request<FlowchartInfo>(`/api/projects/${id}/scope/flowchart`, { method: "POST" }),
+  removeClaudeAccount: (id: string) =>
+    request<ClaudeAccounts>(`/api/claude/accounts/${id}`, { method: "DELETE" }),
+  getFlowchart: (id: string) =>
+    request<FlowchartInfo>(`/api/projects/${id}/scope/flowchart`),
+  generateFlowchart: (id: string) =>
+    request<FlowchartInfo>(`/api/projects/${id}/scope/flowchart`, {
+      method: "POST",
+    }),
   eventsUrl: (runId: string) => `${API_URL}/api/runs/${runId}/events`,
 };
 
@@ -1366,8 +1861,21 @@ export interface DesignPlan {
   summary: string;
   candidates: { part: string; products: string[]; why: string }[];
   main_screen: { path: string; description: string };
-  navigation: { type: string; items: string[]; mobile: string; follows?: string };
-  pages: { path: string; name: string; kind: string; follows: string; source: string; layout: string; changes?: string }[];
+  navigation: {
+    type: string;
+    items: string[];
+    mobile: string;
+    follows?: string;
+  };
+  pages: {
+    path: string;
+    name: string;
+    kind: string;
+    follows: string;
+    source: string;
+    layout: string;
+    changes?: string;
+  }[];
   joins: string[];
   decisions: { topic: string; chosen: string; source: string; why: string }[];
   not_taken?: string[];
@@ -1378,7 +1886,14 @@ export interface DesignPlanInfo {
   /** True while the plan must be approved before any style is drawn. */
   needed: boolean;
   /** Products like this website, from the project's own research. */
-  candidates: { product: string; url?: string; for: string; patterns: string[]; vs_guide: string; note: string }[];
+  candidates: {
+    product: string;
+    url?: string;
+    for: string;
+    patterns: string[];
+    vs_guide: string;
+    note: string;
+  }[];
   /** The library guides used, with the products each was researched from. */
   guides: Record<string, string[]>;
 }
