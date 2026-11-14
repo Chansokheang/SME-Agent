@@ -52,6 +52,27 @@ powershell -ExecutionPolicy Bypass -File scripts\tunnel.ps1 -Server <server> -Ss
 ```
 and open http://localhost:3000. Keep that window open while you work.
 
+## Public address (with a password)
+To open Gagesite without the tunnel, from any browser, set in `.env`:
+```bash
+COMPOSE_PROFILES=public
+GAGESITE_PASSWORD=<a long password>     # the one password everyone signs in with
+PUBLIC_PORT=9021                        # Gagesite: http://<server>:9021
+PREVIEW_PORT=9022                       # website previews
+```
+then `docker compose up -d --build`. Both ports must be open in the server's firewall. Gagesite
+itself stays on `127.0.0.1`: a small Caddy container (`deploy/Caddyfile`) answers on the two ports
+and lets a request through only after the sign-in page (`backend/app/access.py`). Five wrong
+passwords from one address pause sign-in for 15 minutes; changing the password signs everyone out.
+Sign out at `/auth/logout`.
+
+Good to know:
+- It is plain HTTP, so the password travels unencrypted. Use a domain with HTTPS for real use.
+- Anyone signed in can use your Claude account and saved connections, and Gagesite can run Docker
+  on the server: share the password only with people you trust.
+- One browser shows one website preview at a time. Websites with their own API ("UI + dedicated
+  API") show their API only through the SSH tunnel.
+
 ## Updating
 ```bash
 cd ~/gagesite-app && git pull && docker compose up -d --build
