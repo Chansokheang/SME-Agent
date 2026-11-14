@@ -10,25 +10,25 @@ const EXAMPLES = [
     business: "Café",
     opener: "I run a small café and want people to see our menu and reserve a table.",
     plan: "A menu the owner edits, table requests confirmed by email, opening hours and a map.",
-    image: 1060,
+    image: "cafe",
   },
   {
     business: "Coffee roaster",
     opener: "We roast beans and want to sell bags online with weekly delivery.",
     plan: "A small shop, subscription orders, delivery days and an admin page for orders.",
-    image: 425,
+    image: "roaster",
   },
   {
     business: "Dessert shop",
     opener: "Customers keep calling to pre-order cakes. I want them to do it online.",
     plan: "Cake pre-orders with pickup dates, a seasonal menu and order notifications.",
-    image: 493,
+    image: "dessert",
   },
   {
     business: "Camera repair",
     opener: "People should be able to ask for a repair quote and send photos.",
     plan: "A quote request form with photo upload, status updates and a services page.",
-    image: 250,
+    image: "camera",
   },
 ];
 
@@ -56,7 +56,7 @@ export default function ExampleCarousel() {
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center grayscale-[60%] contrast-110 transition-transform duration-700 ease-out group-hover:scale-105"
-                  style={{ backgroundImage: `url(https://picsum.photos/id/${item.image}/900/900)` }}
+                  style={{ backgroundImage: `url(/home/${item.image}.jpg)` }}
                 />
                 {offset > 0 && <div className="absolute inset-0 bg-accent-soft/50" />}
               </motion.div>

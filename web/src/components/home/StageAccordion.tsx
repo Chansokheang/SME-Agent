@@ -9,31 +9,31 @@ const STAGES = [
     icon: ChatCircleText,
     title: "Describe",
     text: "Chat about your business, share your menu, price list or current site, and approve the plan Gagesite writes.",
-    image: 3,
+    image: "describe",
   },
   {
     icon: Database,
     title: "Structure",
     text: "Bookings, products, customers or orders: designed from your plan, your spreadsheets or the database you already have.",
-    image: 366,
+    image: "structure",
   },
   {
     icon: PaintBrush,
     title: "Design",
     text: "Add your logo, colours and photos, pick one of three styles, then agree the key pages before anything is built.",
-    image: 26,
+    image: "design",
   },
   {
     icon: Code,
     title: "Build",
     text: "A small AI team builds the working site, and its own API when needed. Every task is tested, and you watch a live preview.",
-    image: 0,
+    image: "build",
   },
   {
     icon: RocketLaunch,
     title: "Launch",
     text: "Code to your GitHub, data in your database, the site on your Vercel and the API on Vercel or your own server, checked after every update.",
-    image: 395,
+    image: "launch",
   },
 ];
 
@@ -86,7 +86,7 @@ export default function StageAccordion() {
             >
               <div
                 className="absolute inset-0 bg-cover bg-center grayscale contrast-125 transition-transform duration-700 ease-out group-hover:scale-105"
-                style={{ backgroundImage: `url(https://picsum.photos/id/${stage.image}/1200/900)` }}
+                style={{ backgroundImage: `url(/home/${stage.image}.jpg)` }}
               />
               <div
                 className={`absolute inset-0 transition-colors duration-700 ${

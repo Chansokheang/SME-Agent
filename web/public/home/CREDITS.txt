@@ -1,0 +1,14 @@
+Photos on Gagesite's home page, from Unsplash (Unsplash License: free to use, no credit required).
+Kept here so the page never depends on another site to show them.
+
+hero.jpg  https://unsplash.com/photos/1559925393-8be0ec4767c8
+approval.jpg  https://unsplash.com/photos/1611095973763-414019e72400
+cafe.jpg  https://unsplash.com/photos/1554118811-1e0d58224f24
+roaster.jpg  https://unsplash.com/photos/1447933601403-0c6688de566e
+dessert.jpg  https://unsplash.com/photos/1578985545062-69928b1d9587
+camera.jpg  https://unsplash.com/photos/1516035069371-29a1b244cc32
+describe.jpg  https://unsplash.com/photos/1488998427799-e3362cec87c3
+structure.jpg  https://unsplash.com/photos/1507925921958-8a62f3d1a50d
+design.jpg  https://unsplash.com/photos/1522542550221-31fd19575a2d
+build.jpg  https://unsplash.com/photos/1517694712202-14dd9538aa97
+launch.jpg  https://unsplash.com/photos/1441986300917-64674bd600d8

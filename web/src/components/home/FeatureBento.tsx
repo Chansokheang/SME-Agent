@@ -39,7 +39,7 @@ export default function FeatureBento() {
         <article className="group relative min-h-[280px] overflow-hidden rounded-3xl md:col-span-2">
           <div
             className="absolute inset-0 bg-cover bg-center grayscale contrast-125 transition-transform duration-700 ease-out group-hover:scale-105"
-            style={{ backgroundImage: "url(https://picsum.photos/id/4/1200/700)" }}
+            style={{ backgroundImage: "url(/home/approval.jpg)" }}
           />
           <div className="absolute inset-0 bg-gradient-to-tr from-[#0e2a57]/90 via-[#1a4f9e]/60 to-accent/20" />
           <div className="relative flex h-full flex-col justify-end p-7 text-white">

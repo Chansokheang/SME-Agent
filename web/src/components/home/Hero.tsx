@@ -26,7 +26,7 @@ export default function Hero() {
       {/* Full-bleed photo, desaturated and washed toward white + light blue so dark text stays legible. */}
       <div
         className="hero-bg absolute inset-0 -z-20 bg-cover bg-center opacity-60 contrast-125 grayscale"
-        style={{ backgroundImage: "url(https://picsum.photos/id/42/1920/1080)" }}
+        style={{ backgroundImage: "url(/home/hero.jpg)" }}
       />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(253,254,255,0.97)_0%,rgba(245,249,254,0.9)_45%,rgba(214,232,252,0.75)_100%)]" />
       <div className="absolute -left-40 top-1/3 -z-10 size-[520px] rounded-full bg-accent/15 blur-[120px]" />
