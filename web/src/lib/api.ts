@@ -1,5 +1,19 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001";
+/** Opened on a public address (not this computer or the SSH tunnel): Caddy serves the API on the
+ * same address, and website previews through PREVIEW_PORT (deploy/Caddyfile). */
+const PUBLIC =
+  typeof window !== "undefined" && !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+
+export const API_URL = PUBLIC ? "" : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001");
+
+/** A website preview's address in the browser: http://localhost:<port> as it is, or through the
+ * preview port when Gagesite is opened on a public address. */
+export function previewAddress(url: string, path = "/"): string {
+  const page = path.startsWith("/") ? path : `/${path}`;
+  const local = /^http:\/\/localhost:(\d+)\/?$/.exec(url);
+  if (!PUBLIC || !local) return `${url}${page}`;
+  const port = process.env.NEXT_PUBLIC_PREVIEW_PORT || "9022";
+  return `${window.location.protocol}//${window.location.hostname}:${port}/__preview/${local[1]}${page}`;
+}
 
 export type StageStatus = "locked" | "active" | "approved";
 

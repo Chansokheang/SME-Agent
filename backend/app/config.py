@@ -27,5 +27,10 @@ class Settings(BaseSettings):
     secret_key: str = ""
     secret_key_file: Path = REPO_ROOT / "data" / "secret.key"
 
+    # Opened from the internet (compose profile "public"): the one password that signs people in,
+    # and the public port Gagesite answers on (the sign-in page lives there). See app/access.py.
+    gagesite_password: str = ""
+    public_port: int = 0
+
 
 settings = Settings()

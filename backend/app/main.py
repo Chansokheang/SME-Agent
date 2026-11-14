@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field as PydanticField
 from sqlmodel import Session, select
 from sse_starlette.sse import EventSourceResponse
 
-from . import api_server, build_team, chat_files, claude_accounts, flow_video, stitch, data_browser, patterns, project_keys, data_import, db_connect, deploy_runner, design_kit, github, link_reader, profiler, samples, schema_sql, secrets_store, simple_site, site_runner, source_db, sources, vercel, workspace
+from . import access, api_server, build_team, chat_files, claude_accounts, flow_video, stitch, data_browser, patterns, project_keys, data_import, db_connect, deploy_runner, design_kit, github, link_reader, profiler, samples, schema_sql, secrets_store, simple_site, site_runner, source_db, sources, vercel, workspace
 from .config import settings
 from .db import ApiServer, ClaudeAccount, DatabaseConnection, Deployment, GitHubConnection, Message, Project, Run, SourceDatabase, StageState, VercelConnection, engine, get_session, init_db, utcnow
 from .runner import RunHandle, RunResult, claude_binary, runs, stage_prompt_file
@@ -83,6 +83,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Gagesite API", lifespan=lifespan)
+app.include_router(access.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

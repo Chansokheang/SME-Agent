@@ -1,0 +1,61 @@
+# Gagesite on a public address, behind a password (compose profile "public", docs/DEPLOY.md).
+#
+# Gagesite itself stays on 127.0.0.1 (web 3000, backend 8001, previews 3100-3119). Caddy answers on
+# two public ports and lets a request through only when the backend's /auth/check accepts its
+# session cookie (backend/app/access.py); otherwise the browser gets the sign-in page.
+#   PUBLIC_PORT  (9021): Gagesite. /api/* goes to the backend, everything else to the web app.
+#   PREVIEW_PORT (9022): the website previews. /__preview/<port>/<path> picks the preview (a cookie
+#                        remembers it), so one browser shows one preview at a time.
+{
+	admin off
+	auto_https off
+}
+
+(signed_in) {
+	forward_auth 127.0.0.1:8001 {
+		uri /auth/check
+	}
+}
+
+:{$PUBLIC_PORT:9021} {
+	encode gzip
+	handle /auth/* {
+		reverse_proxy 127.0.0.1:8001
+	}
+	handle /api/* {
+		import signed_in
+		# Live run updates are a stream: pass them on at once.
+		reverse_proxy 127.0.0.1:8001 {
+			flush_interval -1
+		}
+	}
+	handle {
+		import signed_in
+		reverse_proxy 127.0.0.1:3000
+	}
+}
+
+:{$PREVIEW_PORT:9022} {
+	import signed_in
+
+	@open path_regexp open ^/__preview/(31[01][0-9])(/.*)$
+	handle @open {
+		header Set-Cookie "gagesite_preview={re.open.1}; Path=/; SameSite=Lax; HttpOnly"
+		redir "{re.open.2}?{query}" 302
+	}
+	@bare path_regexp bare ^/__preview/(31[01][0-9])$
+	handle @bare {
+		redir /__preview/{re.bare.1}/ 302
+	}
+
+	handle {
+		map {cookie.gagesite_preview} {preview_upstream} {
+			~^(31[01][0-9])$ "127.0.0.1:${1}"
+			default "127.0.0.1:3100"
+		}
+		reverse_proxy {preview_upstream} {
+			header_up Host localhost
+			flush_interval -1
+		}
+	}
+}

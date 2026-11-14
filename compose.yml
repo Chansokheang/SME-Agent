@@ -25,6 +25,7 @@ services:
         required: false
     environment:
       BIND_HOST: ${BIND_HOST:-127.0.0.1}
+      PUBLIC_PORT: ${PUBLIC_PORT:-9021}
       CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
     volumes:
       - ./data:/data                                 # the database, the encryption key, every project
@@ -37,6 +38,7 @@ services:
       network: host
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8001}
+        NEXT_PUBLIC_PREVIEW_PORT: ${PREVIEW_PORT:-9022}
     network_mode: host
     restart: unless-stopped
     environment:
@@ -44,6 +46,23 @@ services:
       PORT: "3000"
     depends_on:
       - backend
+
+  # Opened from the internet, with a password (COMPOSE_PROFILES=public in .env). Gagesite stays on
+  # 127.0.0.1; Caddy answers on PUBLIC_PORT (Gagesite) and PREVIEW_PORT (website previews), and
+  # lets a request through only with a session from the sign-in page (backend/app/access.py).
+  public:
+    image: caddy:2.8.4-alpine
+    profiles: ["public"]
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PUBLIC_PORT: ${PUBLIC_PORT:-9021}
+      PREVIEW_PORT: ${PREVIEW_PORT:-9022}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - backend
+      - web
 
 volumes:
   claude-home:

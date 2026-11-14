@@ -6,6 +6,9 @@ COPY . .
 # Baked into the client bundle at build time: the URL the *browser* uses to reach the backend.
 ARG NEXT_PUBLIC_API_URL=http://localhost:8001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Opened on a public address (deploy/Caddyfile): the port that shows website previews.
+ARG NEXT_PUBLIC_PREVIEW_PORT=9022
+ENV NEXT_PUBLIC_PREVIEW_PORT=$NEXT_PUBLIC_PREVIEW_PORT
 RUN npm run build
 
 FROM node:22-alpine
