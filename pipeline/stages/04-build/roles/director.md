@@ -138,7 +138,8 @@ the direction unless they ask for a different one.
     ],
     "interaction": {
       "hover": "cards lift 4px and their shadow deepens in 220ms; images scale 1.03 in 600ms",
-      "press": "buttons scale 0.98 for 120ms",
+      "press": "buttons scale 0.98 for 100ms, on press",
+      "open_close": "the menu grows from its button and closes the same way; spring, no bounce",
       "focus": "2px accent ring with 3px offset on everything focusable",
       "feedback": "the form answers within 150ms with a pending state"
     },
@@ -158,6 +159,12 @@ specific to THIS concept (the values above are only an example), so every sectio
 component the builder makes is consistent. These are motion timing and easing, the layout
 grid and spacing, the type scale, the components (each with what it does), interaction
 timing (hover, press, focus, feedback) and responsive behavior at each screen size.
+In `interaction`, also decide how things feel to touch (the builder's rules follow Emil
+Kowalski's "apple-design", MIT): presses answer on press; menus and sheets open from their
+button and close the same way, on springs without bounce, and can be reversed mid-way;
+anything draggable (a picker, a slider, a 3D object) follows the finger, carries a flick to
+the nearest stop and gives a little at its ends. Say it in `open_close` and `drag` when the
+page has them, for example `"open_close": "menu grows from its button, spring, no bounce"`.
 `scroll` ranges run from 0 to 100, in order, covering the whole page (the last one ends at
 100). Write 6 to 12 sections. Every section has `motion` (even calm ones say what they do,
 for example "content simply scrolls; a thin progress line fills").

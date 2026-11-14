@@ -56,3 +56,42 @@ accounts and admin). Also follow "Motion" above for presses, results and open/cl
   layout of public content pages, never around chat, admin, account or tool pages).
 - If `site/package.json` lacks `gsap`, `@gsap/react` or `lenis`, add them (`gsap ^3.15.1`,
   `@gsap/react ^2.1.2`, `lenis ^1.3.27`) and run `npm run site:install`.
+
+## How it feels to use (presses, open and close, dragging, type)
+Adapted from Emil Kowalski's "apple-design" skill (MIT licence,
+github.com/emilkowalski/skills), which translates Apple's interface talks for the web.
+Scroll stories follow "Motion" above; these rules are for everything a visitor touches.
+- **Answer the press, not the release.** Buttons, cards and links react the moment they are
+  pressed (`:active` scale 0.97-0.98 in about 100ms). Nothing on the way from a tap to the
+  result waits for no reason: no artificial delays, no debounce on buttons.
+- **Everything can change its mind.** A menu, drawer, sheet or accordion that is opening can
+  be closed again mid-way, and turns back from where it is on screen (GSAP tweens on the
+  same element with `overwrite: "auto"`, or springs). Never block input while something
+  animates.
+- **Springs for what people touch, no bounce by default.** Opening, closing and moving UI
+  (menus, sheets, tab indicators, toggles) uses a spring with no overshoot (in Motion:
+  `{ type: "spring", bounce: 0, duration: 0.3 }` to `0.4`). A little bounce (`0.15` to
+  `0.2`) only after a flick or a drag let go. Scroll-scrubbed moments keep their own easing.
+- **Same way in, same way out.** A panel that slides in from the right leaves to the right.
+  Menus, popovers and sheets grow from the button that opened them (`transform-origin` at
+  that button), not from the middle of the screen.
+- **Dragging feels physical** (sliders, before/after, carousels, a 3D object to turn):
+  - the item stays under the finger from the point where it was grabbed
+    (`setPointerCapture`, no jump to its centre);
+  - about 10px of movement decides the direction before anything moves;
+  - a flick carries on: it lands on the snap point nearest to where its speed would take it,
+    and keeps that speed as it settles;
+  - past the first or last item it gives a little and springs back, instead of stopping dead.
+- **Glass only over moving content.** A blurred bar or sheet (`backdrop-filter`) sits over
+  content that scrolls beneath it; never glass on glass. Text on glass is a little heavier
+  and darker than elsewhere.
+- **Type spacing follows size.** Display headings: negative letter-spacing (-0.01em to
+  -0.03em) and tight lines (1.0 to 1.15). Body: letter-spacing 0, lines 1.5 to 1.7. Small
+  labels and caps: slightly positive. Spacing in `rem`, so a visitor's larger text size
+  doesn't break the layout.
+- **Every comfort setting has a version:**
+  - `prefers-reduced-motion: reduce`: short fades or the still final state instead of
+    slides, springs and parallax, but presses and changes still show;
+  - `prefers-reduced-transparency: reduce`: glass becomes a solid surface without blur;
+  - `prefers-contrast: more`: solid backgrounds with a clear border;
+  - nothing large drifts or loops slowly across the whole screen.
