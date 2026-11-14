@@ -24,6 +24,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import child_env
 from .config import settings
 from . import workspace
 
@@ -224,7 +225,7 @@ class PreviewManager:
         if not service_proc.installed(root):
             preview.status = "installing"
             done = subprocess.run(["node", ".claude/hooks/service.cjs", "install"], cwd=root,
-                                  env={**os.environ, "GAGESITE_PYTHON": sys.executable},
+                                  env=child_env.safe_env({"GAGESITE_PYTHON": sys.executable}),
                                   capture_output=True, text=True, encoding="utf-8", errors="replace")
             preview.log.extend(("[api] " + line for line in (done.stdout + done.stderr).splitlines()[-20:]))
             if done.returncode != 0:
@@ -256,7 +257,7 @@ class PreviewManager:
 
     def _run(self, preview: Preview) -> None:
         site = site_path(preview.project_id)
-        env = {**os.environ, "PORT": str(preview.port), "NEXT_TELEMETRY_DISABLED": "1"}
+        env = child_env.safe_env({"PORT": str(preview.port), "NEXT_TELEMETRY_DISABLED": "1"})
         # The owner's keys (a model's address and key, an email key...): only the running website
         # gets the values, never the AI's runs or any file in the workspace.
         from . import project_keys

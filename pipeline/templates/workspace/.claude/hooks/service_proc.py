@@ -66,10 +66,23 @@ def healthy(url: str, timeout: float = 5) -> bool:
 ISOLATED = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW) if os.name == "nt" else 0
 
 
+# Never handed to the website or its service: the AI's own sign-in and Gagesite's own settings
+# (an inherited DATABASE_URL would even win over the project's .env).
+PRIVATE_PREFIXES = ("CLAUDE_CODE_", "ANTHROPIC_")
+PRIVATE_NAMES = {"GAGESITE_PASSWORD", "SECRET_KEY_FILE", "DATABASE_URL", "PUBLIC_API_URL", "PUBLIC_PORT",
+                 "PREVIEW_PORT", "COMPOSE_PROFILES"}
+
+
+def website_env() -> dict[str, str]:
+    """This run's environment without anything private, for the website and its API service."""
+    return {k: v for k, v in os.environ.items()
+            if k.upper() not in PRIVATE_NAMES and not k.upper().startswith(PRIVATE_PREFIXES)}
+
+
 def start(root: Path, port: int, log, reload: bool = False, extra_env: dict[str, str] | None = None) -> subprocess.Popen:
     """Starts the service on `port`, writing its output to `log` (an open file)."""
     folder = service_dir(root)
-    env = {**os.environ, **dotenv(root), **(extra_env or {}), "PORT": str(port), "PYTHONIOENCODING": "utf-8"}
+    env = {**website_env(), **dotenv(root), **(extra_env or {}), "PORT": str(port), "PYTHONIOENCODING": "utf-8"}
     if is_python(root):
         command = [str(venv_python(root)), "-m", "uvicorn", "app.main:app", "--port", str(port)] + (["--reload"] if reload else [])
     else:

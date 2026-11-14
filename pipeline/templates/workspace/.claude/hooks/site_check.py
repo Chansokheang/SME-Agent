@@ -144,7 +144,7 @@ class Server:
         self.url = f"http://localhost:{port}"
         self.log_path = OWN_LOG
         npm = shutil.which("npm") or "npm"
-        env = {**os.environ, "NEXT_DIST_DIR": self.dist, "NEXT_TELEMETRY_DISABLED": "1", "PORT": str(port), **service_env}
+        env = {**service_proc.website_env(), "NEXT_DIST_DIR": self.dist, "NEXT_TELEMETRY_DISABLED": "1", "PORT": str(port), **service_env}
         self.log = open(OWN_LOG, "w", encoding="utf-8", errors="replace")
         if self.final:
             print("Final test: building the finished website the way it will be built online...", flush=True)

@@ -35,6 +35,7 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
+from . import child_env
 from . import project_keys, secrets_store, site_runner, smoke, vercel, workspace
 from .config import settings
 from .db import ApiServer, DatabaseConnection, Deployment, VercelConnection, engine, utcnow
@@ -248,7 +249,7 @@ class ThisPc:
 
     def compose(self, *args: str, timeout: int = 900, extra_env: dict[str, str] | None = None) -> tuple[int, str]:
         done = subprocess.run(["docker", "compose", "-f", "compose.yml", *args], cwd=self.folder,
-                              env={**os.environ, **self.env, **(extra_env or {})}, capture_output=True, text=True,
+                              env=child_env.safe_env(self.env, extra_env), capture_output=True, text=True,
                               encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW)
         return done.returncode, done.stdout + done.stderr
 

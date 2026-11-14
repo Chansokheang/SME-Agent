@@ -19,6 +19,7 @@ from pathlib import Path
 
 from sqlmodel import Session
 
+from . import child_env
 from . import github, secrets_store, site_runner, vercel, workspace
 from .db import DatabaseConnection, Deployment, GitHubConnection, VercelConnection, engine, utcnow
 
@@ -345,7 +346,7 @@ class Job:
         self.step("code", "done", f"{repo} @ {pushed['commit']}")
 
     def npx(self, *args: str, env: dict[str, str], timeout: int = 300) -> subprocess.CompletedProcess:
-        return subprocess.run([shutil.which("npx") or "npx", *args], cwd=self.site, env={**os.environ, **env},
+        return subprocess.run([shutil.which("npx") or "npx", *args], cwd=self.site, env=child_env.safe_env(env),
                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
 
     def prepare_database(self, db_url: str) -> str:
@@ -399,7 +400,7 @@ class Job:
 
     # ---- "UI + dedicated API" ----
     def run_in_service(self, command: list[str], env: dict[str, str], timeout: int = 300) -> subprocess.CompletedProcess:
-        return subprocess.run(command, cwd=self.service, env={**os.environ, **env, "PYTHONIOENCODING": "utf-8"},
+        return subprocess.run(command, cwd=self.service, env=child_env.safe_env(env, {"PYTHONIOENCODING": "utf-8"}),
                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
 
     def prepare_service_database(self, db_url: str) -> str | None:

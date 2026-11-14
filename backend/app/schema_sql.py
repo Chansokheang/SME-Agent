@@ -13,6 +13,7 @@ from pathlib import Path
 
 import psycopg
 
+from . import child_env
 from .db_connect import normalize
 
 PRISMA = "prisma@6"
@@ -49,7 +50,7 @@ def postgres_sql(prisma_text: str) -> str:
         path = Path(folder) / "schema.prisma"
         path.write_text(schema, encoding="utf-8")
         # A placeholder URL: migrate diff only reads the file, it never connects.
-        env = {**os.environ, "DATABASE_URL": "postgresql://placeholder:placeholder@localhost:5432/placeholder"}
+        env = child_env.safe_env({"DATABASE_URL": "postgresql://placeholder:placeholder@localhost:5432/placeholder"})
         result = subprocess.run(
             [npx, "--yes", PRISMA, "migrate", "diff", "--from-empty", "--to-schema-datamodel", str(path), "--script"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=240, env=env,

@@ -18,6 +18,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import child_env
 from .config import settings
 from .stages import Stage
 
@@ -306,7 +307,7 @@ class RunManager:
             pass  # noting it is best effort; the run itself goes ahead
 
     def _execute(self, loop, handle, stage, workspace, prompt, session_id, resume, result, extra_env) -> None:
-        env = {k: v for k, v in os.environ.items() if k not in NESTED_SESSION_VARS}
+        env = child_env.without_gagesite({k: v for k, v in os.environ.items() if k not in NESTED_SESSION_VARS})
         env["PIPELINE_STAGE"] = stage.key
         env.pop("GAGESITE_ROLE", None)
         if stage.role:

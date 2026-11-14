@@ -23,7 +23,12 @@ function dotenv() {
 }
 
 function run(bin, args, extraEnv = {}) {
-  const env = { ...process.env, ...dotenv(), ...extraEnv, PYTHONIOENCODING: "utf-8" };
+  // Never handed to the service: the AI's own sign-in and Gagesite's own settings.
+  const PRIVATE = new Set(["GAGESITE_PASSWORD", "SECRET_KEY_FILE", "DATABASE_URL", "PUBLIC_API_URL", "PUBLIC_PORT",
+    "PREVIEW_PORT", "COMPOSE_PROFILES"]);
+  const own = Object.fromEntries(Object.entries(process.env).filter(([k]) =>
+    !PRIVATE.has(k.toUpperCase()) && !/^(CLAUDE_CODE_|ANTHROPIC_)/i.test(k)));
+  const env = { ...own, ...dotenv(), ...extraEnv, PYTHONIOENCODING: "utf-8" };
   const done = spawnSync(bin, args, { cwd: service, stdio: "inherit", shell: windows && !python, env });
   return done.status ?? 1;
 }

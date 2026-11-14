@@ -32,6 +32,11 @@ Small-business overrides:
 - Do the design rules' checks silently. Your chat replies stay plain and short.
 - Admin and owner-only pages get a simple, functional layout, but still designed:
   clear hierarchy, colour coding where the design has it, one main action per row.
+- A page about something with a status (a booking, an order, a request, a ticket) shows only
+  what fits its current status. Once it is cancelled, refunded, finished or rejected, the
+  earlier status's next steps, amounts to pay, reminders and buttons go; keep a short record
+  (what, when, the status) and the one action that now makes sense (book again, find a
+  similar item). Check each status's page, not only the first one.
 - Seed data and page text are realistic for this business (believable names, titles,
   prices, dates that add up), never wireframe text like "Item 1", "Example author A"
   or sentences describing the layout.

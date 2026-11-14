@@ -10,6 +10,8 @@ import json
 import os
 import shutil
 import subprocess
+
+from . import child_env
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -80,7 +82,7 @@ def _create(repo: str, token: str) -> dict:
 
 
 def _git(site: Path, *args: str, token: str | None = None) -> subprocess.CompletedProcess:
-    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+    env = child_env.safe_env({"GIT_TERMINAL_PROMPT": "0"})
     if token:
         basic = base64.b64encode(f"x-access-token:{token}".encode()).decode()
         env.update({
