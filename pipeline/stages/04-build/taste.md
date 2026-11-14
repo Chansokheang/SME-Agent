@@ -92,6 +92,9 @@ Scroll stories follow "Motion" above; these rules are for everything a visitor t
 - **Every comfort setting has a version:**
   - `prefers-reduced-motion: reduce`: short fades or the still final state instead of
     slides, springs and parallax, but presses and changes still show;
-  - `prefers-reduced-transparency: reduce`: glass becomes a solid surface without blur;
+  - `prefers-reduced-transparency: reduce`: EVERY surface with a blur or see-through
+    background becomes solid without blur, including the header, menus, sheets and
+    pop-ups, not only those with a "glass" class (target `[class*="backdrop-"]` and the
+    glass class together, or give every blurred surface the same class);
   - `prefers-contrast: more`: solid backgrounds with a clear border;
   - nothing large drifts or loops slowly across the whole screen.
