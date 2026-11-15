@@ -1,8 +1,8 @@
 """Gagesite's public links through Cloudflare quick tunnels (compose profile "tunnel", docs/DEPLOY.md).
 
-When the server's own ports can't be reached from the internet, two cloudflared containers each
-give a free https://<random>.trycloudflare.com link: one to Caddy's Gagesite port, one to its
-preview port. Each tunnel reports its link on a small local status page (`/quicktunnel`); this
+When the server's own ports can't be reached from the internet, three cloudflared containers each
+give a free https://<random>.trycloudflare.com link: to Caddy's Gagesite port, its preview port
+and its API port (the previews' own APIs and their docs). Each tunnel reports its link on a small local status page (`/quicktunnel`); this
 module reads them, so the sign-in can pass a session from one link to the other (access.py) and
 the web app knows where previews are. The links change whenever the tunnels restart.
 """
@@ -24,8 +24,12 @@ def _read(port: int) -> str:
 
 
 def hostname(which: str) -> str:
-    """The tunnel's host name ("abc.trycloudflare.com") for "app" or "preview", or "" without one."""
-    port = settings.tunnel_app_metrics if which == "app" else settings.tunnel_preview_metrics
+    """The tunnel's host name ("abc.trycloudflare.com") for "app", "preview" or "api", or "" without one."""
+    port = {
+        "app": settings.tunnel_app_metrics,
+        "preview": settings.tunnel_preview_metrics,
+        "api": settings.tunnel_api_metrics,
+    }.get(which, 0)
     if not port:
         return ""
     hit = _cache.get(which)
@@ -41,4 +45,4 @@ def hostname(which: str) -> str:
 
 def links() -> dict[str, str]:
     """Both public links, for the deploy guide and the server log."""
-    return {which: f"https://{host}" for which in ("app", "preview") if (host := hostname(which))}
+    return {which: f"https://{host}" for which in ("app", "preview", "api") if (host := hostname(which))}

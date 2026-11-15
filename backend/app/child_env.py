@@ -27,6 +27,7 @@ SAFE_PREFIXES = ("LC_", "XDG_", "NPM_CONFIG_", "COREPACK_", "PUPPETEER_")
 # these, and website processes started during that run drop them too (see the workspace hooks).
 GAGESITE_ONLY = {
     "GAGESITE_PASSWORD", "SECRET_KEY_FILE", "DATABASE_URL", "PUBLIC_API_URL", "PUBLIC_PORT", "PREVIEW_PORT", "TUNNEL_APP_METRICS", "TUNNEL_PREVIEW_METRICS",
+    "TUNNEL_API_METRICS", "API_PORT",
     "COMPOSE_PROFILES",
 }
 

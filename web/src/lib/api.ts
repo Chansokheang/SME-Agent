@@ -10,6 +10,9 @@ export const API_URL = PUBLIC ? "" : (process.env.NEXT_PUBLIC_API_URL ?? "http:/
 export interface PreviewAccess {
   origin: string | null;
   ticket: string | null;
+  /** The previews' own APIs (their docs) have a third link, with its own ticket. */
+  api_origin?: string | null;
+  api_ticket?: string | null;
 }
 
 /** A website preview's address in the browser: http://localhost:<port> as it is, through the
@@ -25,6 +28,25 @@ export function previewAddress(url: string, path = "/", access?: PreviewAccess |
   }
   const port = process.env.NEXT_PUBLIC_PREVIEW_PORT || "9022";
   return `${window.location.protocol}//${window.location.hostname}:${port}/__preview/${local[1]}${page}`;
+}
+
+/** A preview's own API (http://localhost:4100) as this browser can open it, like previewAddress. */
+export function apiAddress(url: string, path = "/", access?: PreviewAccess | null): string {
+  const page = path.startsWith("/") ? path : `/${path}`;
+  const local = /^http:\/\/localhost:(\d+)\/?$/.exec(url);
+  if (!PUBLIC || !local) return `${url.replace(/\/$/, "")}${page}`;
+  if (access?.api_origin && access.api_ticket) {
+    const next = encodeURIComponent(`/__api/${local[1]}${page}`);
+    return `${access.api_origin}/__gagesite/enter?ticket=${encodeURIComponent(access.api_ticket)}&next=${next}`;
+  }
+  const port = process.env.NEXT_PUBLIC_API_PORT || "9023";
+  return `${window.location.protocol}//${window.location.hostname}:${port}/__api/${local[1]}${page}`;
+}
+
+/** What to show for a preview's API address: its public link when there is one. */
+export function apiLabel(url: string, access?: PreviewAccess | null): string {
+  const base = access?.api_origin && PUBLIC ? access.api_origin : url;
+  return `${base.replace(/^https?:\/\//, "").replace(/\/$/, "")}/api/v1`;
 }
 
 

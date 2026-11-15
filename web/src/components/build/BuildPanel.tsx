@@ -24,7 +24,7 @@ import GitHubConnect from "@/components/build/GitHubConnect";
 import ApprovalBar from "@/components/stage/ApprovalBar";
 import EmptyCard from "@/components/stage/EmptyCard";
 import { usePreviewAccess } from "@/lib/usePreviewAccess";
-import { api, type BuildArtifact, type BuildCheck, type BuildPage, type GitHubInfo, type PreviewInfo, previewAddress } from "@/lib/api";
+import { api, type BuildArtifact, type BuildCheck, type BuildPage, type GitHubInfo, type PreviewInfo, apiAddress, apiLabel, previewAddress } from "@/lib/api";
 
 type Tab = "preview" | "pages" | "summary" | "github";
 
@@ -363,11 +363,11 @@ function PreviewView({
       {status === "running" && preview?.api_url && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-surface px-3 py-2 text-xs">
           <span className="font-semibold text-ink">API</span>
-          <a href={preview.api_url} target="_blank" rel="noopener noreferrer" className="font-mono text-muted hover:text-accent">
-            {preview.api_url.replace(/^https?:\/\//, "")}/api/v1
+          <a href={apiAddress(preview.api_url, "/", previewAccess)} target="_blank" rel="noopener noreferrer" className="font-mono text-muted hover:text-accent">
+            {apiLabel(preview.api_url, previewAccess)}
           </a>
           <a
-            href={`${preview.api_url}/docs`}
+            href={apiAddress(preview.api_url, "/docs", previewAccess)}
             target="_blank"
             rel="noopener noreferrer"
             className="ml-auto inline-flex items-center gap-1 font-medium text-accent hover:underline"

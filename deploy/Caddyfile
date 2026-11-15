@@ -6,6 +6,8 @@
 #   PUBLIC_PORT  (9021): Gagesite. /api/* goes to the backend, everything else to the web app.
 #   PREVIEW_PORT (9022): the website previews. /__preview/<port>/<path> picks the preview (a cookie
 #                        remembers it), so one browser shows one preview at a time.
+#   API_PORT     (9023): the previews' own APIs (4100-4119) and their docs, picked the same way with
+#                        /__api/<port>/<path>.
 {
 	admin off
 	auto_https off
@@ -76,6 +78,38 @@
 			}
 			reverse_proxy {preview_upstream} {
 				header_up Host localhost
+				flush_interval -1
+			}
+		}
+	}
+}
+
+:{$API_PORT:9023} {
+	# Opened in its own tab (the API docs), so a plain session cookie is enough here; the tunnel's
+	# API link signs itself in with a ticket like the preview link.
+	handle /__gagesite/* {
+		reverse_proxy 127.0.0.1:8001
+	}
+
+	handle {
+		import signed_in
+
+		@open path_regexp open ^/__api/(41[01][0-9])(/.*)$
+		handle @open {
+			header Set-Cookie "gagesite_api={re.open.1}; Path=/; SameSite=Lax; HttpOnly"
+			redir "{re.open.2}?{query}" 302
+		}
+		@bare path_regexp bare ^/__api/(41[01][0-9])$
+		handle @bare {
+			redir /__api/{re.bare.1}/ 302
+		}
+
+		handle {
+			map {cookie.gagesite_api} {api_upstream} {
+				~^(41[01][0-9])$ "127.0.0.1:${1}"
+				default "127.0.0.1:4100"
+			}
+			reverse_proxy {api_upstream} {
 				flush_interval -1
 			}
 		}

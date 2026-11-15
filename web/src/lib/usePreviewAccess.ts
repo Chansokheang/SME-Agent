@@ -13,7 +13,7 @@ export function usePreviewAccess(): PreviewAccess | null {
     const load = () =>
       api
         .previewAccess()
-        .then((a) => live && setAccess(a.origin ? a : null))
+        .then((a) => live && setAccess(a.origin || a.api_origin ? a : null))
         .catch(() => undefined);
     load();
     const timer = window.setInterval(load, 40_000);

@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # ports where each tunnel reports its link. 0 = no tunnel. See app/tunnel.py.
     tunnel_app_metrics: int = 0
     tunnel_preview_metrics: int = 0
+    tunnel_api_metrics: int = 0
 
 
 settings = Settings()

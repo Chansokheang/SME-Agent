@@ -59,9 +59,10 @@ COMPOSE_PROFILES=public
 GAGESITE_PASSWORD=<a long password>     # the one password everyone signs in with
 PUBLIC_PORT=9021                        # Gagesite: http://<server>:9021
 PREVIEW_PORT=9022                       # website previews
+API_PORT=9023                           # the previews' own APIs and their docs
 ```
-then `docker compose up -d --build`. Both ports must be open in the server's firewall. Gagesite
-itself stays on `127.0.0.1`: a small Caddy container (`deploy/Caddyfile`) answers on the two ports
+then `docker compose up -d --build`. The three ports must be open in the server's firewall. Gagesite
+itself stays on `127.0.0.1`: a small Caddy container (`deploy/Caddyfile`) answers on these ports
 and lets a request through only after the sign-in page (`backend/app/access.py`). Five wrong
 passwords from one address pause sign-in for 15 minutes; changing the password signs everyone out.
 Sign out at `/auth/logout`.
@@ -70,20 +71,19 @@ Good to know:
 - It is plain HTTP, so the password travels unencrypted. Use a domain with HTTPS for real use.
 - Anyone signed in can use your Claude account and saved connections, and Gagesite can run Docker
   on the server: share the password only with people you trust.
-- One browser shows one website preview at a time. Websites with their own API ("UI + dedicated
-  API") show their API only through the SSH tunnel.
+- One browser shows one website preview at a time, and one preview's API docs at a time.
 
 ### When the ports can't be reached from the internet (Cloudflare links)
-On a university or office network the firewall often blocks the two ports from outside. Then add
+On a university or office network the firewall often blocks these ports from outside. Then add
 the `tunnel` profile, which needs no Cloudflare account and opens nothing in the firewall:
 ```bash
 COMPOSE_PROFILES=public,tunnel
 ```
 then `docker compose up -d --build`, and read the two links with
-`docker compose logs tunnel-app tunnel-preview | grep trycloudflare`. Open the `tunnel-app` link
-(https) on any phone or computer and sign in with the same password; previews open on the
-`tunnel-preview` link by themselves. The links are random and change whenever the tunnels restart
-(`docker compose restart tunnel-app tunnel-preview`, a server reboot), so send people the new one.
+`docker compose logs tunnel-app tunnel-preview tunnel-api | grep trycloudflare`. Open the
+`tunnel-app` link (https) on any phone or computer and sign in with the same password; previews
+open on the `tunnel-preview` link, and a website's API docs on the `tunnel-api` link, by themselves. The links are random and change whenever the tunnels restart
+(`docker compose restart tunnel-app tunnel-preview tunnel-api`, a server reboot), so send people the new one.
 Cloudflare's free quick links are meant for testing: for a permanent address, use your own domain
 with a named Cloudflare tunnel, or have the ports opened.
 
