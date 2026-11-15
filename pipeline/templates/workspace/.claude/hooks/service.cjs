@@ -23,11 +23,17 @@ function dotenv() {
 }
 
 function run(bin, args, extraEnv = {}) {
-  // Never handed to the service: the AI's own sign-in and Gagesite's own settings.
-  const PRIVATE = new Set(["GAGESITE_PASSWORD", "SECRET_KEY_FILE", "DATABASE_URL", "PUBLIC_API_URL", "PUBLIC_PORT",
-    "PREVIEW_PORT", "COMPOSE_PROFILES"]);
+  // The service gets only the basics a process needs (same list as service_proc.py); the AI's
+  // sign-in and Gagesite's own settings stay out, so the project's .env decides.
+  const SAFE = new Set(["PATH", "PATHEXT", "HOME", "USER", "USERNAME", "LOGNAME", "SHELL", "HOSTNAME", "TERM", "TZ",
+    "LANG", "LANGUAGE", "TMPDIR", "TEMP", "TMP", "SYSTEMROOT", "SYSTEMDRIVE", "WINDIR", "COMSPEC", "APPDATA",
+    "LOCALAPPDATA", "USERPROFILE", "PROGRAMDATA", "PROGRAMFILES", "PROGRAMFILES(X86)", "PROGRAMW6432",
+    "COMMONPROGRAMFILES", "COMMONPROGRAMFILES(X86)", "PUBLIC", "ALLUSERSPROFILE", "NUMBER_OF_PROCESSORS",
+    "PROCESSOR_ARCHITECTURE", "OS", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR",
+    "REQUESTS_CA_BUNDLE", "NODE_EXTRA_CA_CERTS", "NODE_OPTIONS", "PLAYWRIGHT_BROWSERS_PATH", "PYTHONIOENCODING",
+    "PYTHONUTF8", "CI", "DOCKER_HOST", "DOCKER_CONFIG", "DOCKER_CONTEXT"]);
   const own = Object.fromEntries(Object.entries(process.env).filter(([k]) =>
-    !PRIVATE.has(k.toUpperCase()) && !/^(CLAUDE_CODE_|ANTHROPIC_)/i.test(k)));
+    SAFE.has(k.toUpperCase()) || /^(LC_|XDG_|NPM_CONFIG_|COREPACK_|PUPPETEER_)/i.test(k)));
   const env = { ...own, ...dotenv(), ...extraEnv, PYTHONIOENCODING: "utf-8" };
   const done = spawnSync(bin, args, { cwd: service, stdio: "inherit", shell: windows && !python, env });
   return done.status ?? 1;

@@ -66,17 +66,24 @@ def healthy(url: str, timeout: float = 5) -> bool:
 ISOLATED = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW) if os.name == "nt" else 0
 
 
-# Never handed to the website or its service: the AI's own sign-in and Gagesite's own settings
-# (an inherited DATABASE_URL would even win over the project's .env).
-PRIVATE_PREFIXES = ("CLAUDE_CODE_", "ANTHROPIC_")
-PRIVATE_NAMES = {"GAGESITE_PASSWORD", "SECRET_KEY_FILE", "DATABASE_URL", "PUBLIC_API_URL", "PUBLIC_PORT",
-                 "PREVIEW_PORT", "COMPOSE_PROFILES"}
+# The website and its service get only the basics a process needs from this environment; everything
+# else (the AI's sign-in, Gagesite's own settings such as CORS_ORIGINS, DATABASE_URL or its folders)
+# stays out, so the project's .env decides. Same list as Gagesite's backend/app/child_env.py.
+SAFE_NAMES = {
+    "PATH", "PATHEXT", "HOME", "USER", "USERNAME", "LOGNAME", "SHELL", "HOSTNAME", "TERM", "TZ", "LANG",
+    "LANGUAGE", "TMPDIR", "TEMP", "TMP", "SYSTEMROOT", "SYSTEMDRIVE", "WINDIR", "COMSPEC", "APPDATA",
+    "LOCALAPPDATA", "USERPROFILE", "PROGRAMDATA", "PROGRAMFILES", "PROGRAMFILES(X86)", "PROGRAMW6432",
+    "COMMONPROGRAMFILES", "COMMONPROGRAMFILES(X86)", "PUBLIC", "ALLUSERSPROFILE", "NUMBER_OF_PROCESSORS",
+    "PROCESSOR_ARCHITECTURE", "OS", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE",
+    "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "NODE_EXTRA_CA_CERTS", "NODE_OPTIONS", "PLAYWRIGHT_BROWSERS_PATH",
+    "PYTHONIOENCODING", "PYTHONUTF8", "CI", "DOCKER_HOST", "DOCKER_CONFIG", "DOCKER_CONTEXT",
+}
+SAFE_PREFIXES = ("LC_", "XDG_", "NPM_CONFIG_", "COREPACK_", "PUPPETEER_")
 
 
 def website_env() -> dict[str, str]:
-    """This run's environment without anything private, for the website and its API service."""
-    return {k: v for k, v in os.environ.items()
-            if k.upper() not in PRIVATE_NAMES and not k.upper().startswith(PRIVATE_PREFIXES)}
+    """The basics from this environment, for the website and its API service."""
+    return {k: v for k, v in os.environ.items() if k.upper() in SAFE_NAMES or k.upper().startswith(SAFE_PREFIXES)}
 
 
 def start(root: Path, port: int, log, reload: bool = False, extra_env: dict[str, str] | None = None) -> subprocess.Popen:
