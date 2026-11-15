@@ -110,8 +110,9 @@ def check(request: Request):
         # The preview link: sign in (or already signed in) on Gagesite's link, then come back.
         return RedirectResponse(f"https://{app}/auth/handoff?next={quote(f'https://{host}{uri}', safe='')}", 302)
     login = f"/auth/login?next={quote(f'{scheme}://{host}{uri}', safe='')}"
-    if settings.public_port and host:
-        # A preview port: the sign-in page lives on Gagesite's own port of this host.
+    if settings.public_port and ":" in host:
+        # A preview port: the sign-in page lives on Gagesite's own port of this host. (A tunnel
+        # link has no port: its sign-in page is on the link itself.)
         login = f"{scheme}://{host.split(':')[0]}:{settings.public_port}{login}"
     return RedirectResponse(login, status_code=302)
 
