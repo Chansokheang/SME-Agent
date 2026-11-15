@@ -23,6 +23,7 @@ import remarkGfm from "remark-gfm";
 import GitHubConnect from "@/components/build/GitHubConnect";
 import ApprovalBar from "@/components/stage/ApprovalBar";
 import EmptyCard from "@/components/stage/EmptyCard";
+import { usePreviewAccess } from "@/lib/usePreviewAccess";
 import { api, type BuildArtifact, type BuildCheck, type BuildPage, type GitHubInfo, type PreviewInfo, previewAddress } from "@/lib/api";
 
 type Tab = "preview" | "pages" | "summary" | "github";
@@ -262,6 +263,7 @@ function PreviewView({
   onStop: () => void;
 }) {
   const status = preview?.status ?? "stopped";
+  const previewAccess = usePreviewAccess();
   const donePages = artifact.pages.filter((p) => p.status === "done");
 
   if (!artifact.installed) {
@@ -326,7 +328,7 @@ function PreviewView({
                 <ArrowClockwise size={16} />
               </button>
               <a
-                href={preview?.url ? previewAddress(preview.url, path) : undefined}
+                href={preview?.url ? previewAddress(preview.url, path, previewAccess) : undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Open in a new tab"
@@ -385,7 +387,7 @@ function PreviewView({
           >
             <iframe
               key={frameKey}
-              src={previewAddress(preview.url, path)}
+              src={previewAddress(preview.url, path, previewAccess)}
               title="Your website"
               className="h-full w-full bg-white"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"

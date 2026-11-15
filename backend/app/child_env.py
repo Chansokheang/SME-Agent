@@ -26,7 +26,7 @@ SAFE_PREFIXES = ("LC_", "XDG_", "NPM_CONFIG_", "COREPACK_", "PUPPETEER_")
 # Gagesite's own settings and secrets. Even an AI run (which needs its Claude sign-in) never gets
 # these, and website processes started during that run drop them too (see the workspace hooks).
 GAGESITE_ONLY = {
-    "GAGESITE_PASSWORD", "SECRET_KEY_FILE", "DATABASE_URL", "PUBLIC_API_URL", "PUBLIC_PORT", "PREVIEW_PORT",
+    "GAGESITE_PASSWORD", "SECRET_KEY_FILE", "DATABASE_URL", "PUBLIC_API_URL", "PUBLIC_PORT", "PREVIEW_PORT", "TUNNEL_APP_METRICS", "TUNNEL_PREVIEW_METRICS",
     "COMPOSE_PROFILES",
 }
 

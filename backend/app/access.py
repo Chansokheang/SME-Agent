@@ -5,6 +5,11 @@ every request (`/auth/check`): without a valid session cookie the browser is sen
 sign-in page that asks for the one shared password (GAGESITE_PASSWORD in .env). The cookie is
 signed with a key derived from the password and the server's own secret, so changing the password
 signs everyone out. Opened through the SSH tunnel (localhost), nothing here is involved.
+
+Through Cloudflare quick tunnels (tunnel.py) Gagesite and its previews have two different links, and
+a browser never shares cookies between them. A preview link without a session goes to
+`/auth/handoff` on Gagesite's link: once signed in there, it gets a one-minute ticket that
+`/__gagesite/enter` on the preview link turns into a session of its own.
 """
 import hashlib
 import hmac
@@ -15,12 +20,14 @@ from urllib.parse import quote, urlsplit
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
+from . import secrets_store, tunnel
 from .config import settings
 
 router = APIRouter()
 
 COOKIE = "gagesite_session"
 SESSION_DAYS = 30
+TICKET_SECONDS = 60
 # Wrong passwords per address before a pause, and how long the pause lasts.
 MAX_FAILURES = 5
 LOCK_SECONDS = 15 * 60
@@ -30,6 +37,7 @@ _failures: dict[str, list[float]] = {}
 def _key() -> bytes:
     secret = b""
     try:
+        secrets_store.ensure_key()  # made now, not on the first saved secret (that signed everyone out)
         secret = settings.secret_key_file.read_bytes()
     except OSError:
         pass
@@ -37,9 +45,15 @@ def _key() -> bytes:
     return hashlib.sha256(material).digest()
 
 
-def _sign(expires: int) -> str:
-    mac = hmac.new(_key(), str(expires).encode(), hashlib.sha256).hexdigest()
+def _sign(expires: int, purpose: str = "") -> str:
+    message = f"{purpose}:{expires}" if purpose else str(expires)
+    mac = hmac.new(_key(), message.encode(), hashlib.sha256).hexdigest()
     return f"{expires}.{mac}"
+
+
+def _host(request: Request) -> str:
+    """The host the browser asked for (behind Caddy), without a port."""
+    return (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").split(":")[0].lower()
 
 
 def _valid(cookie: str | None) -> bool:
@@ -49,6 +63,13 @@ def _valid(cookie: str | None) -> bool:
     if not expires.isdigit() or int(expires) < time.time():
         return False
     return hmac.compare_digest(cookie, _sign(int(expires)))
+
+
+def _valid_ticket(ticket: str, host: str) -> bool:
+    expires, _, _mac = ticket.partition(".")
+    if not expires.isdigit() or not time.time() <= int(expires) <= time.time() + TICKET_SECONDS:
+        return False
+    return hmac.compare_digest(ticket, _sign(int(expires), f"enter:{host}"))
 
 
 def _client(request: Request) -> str:
@@ -64,12 +85,12 @@ def _locked(address: str) -> bool:
 
 
 def _safe_next(target: str, request: Request) -> str:
-    """Back to where the person was going: a path here, or another port of this same host."""
-    if target.startswith("/") and not target.startswith("//"):
+    """Back to where the person was going: a path here, another port of this same host, or the preview link."""
+    if target.startswith("/") and not target.startswith("//") and "\\" not in target:
         return target
     parts = urlsplit(target)
-    host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").split(":")[0]
-    if parts.scheme in ("http", "https") and parts.hostname and parts.hostname == host:
+    preview = tunnel.hostname("preview")
+    if parts.scheme in ("http", "https") and parts.hostname and parts.hostname in (_host(request), preview):
         return target
     return "/"
 
@@ -84,6 +105,10 @@ def check(request: Request):
         return JSONResponse({"detail": "Sign in to Gagesite again"}, status_code=401)
     host = request.headers.get("x-forwarded-host", "")
     scheme = request.headers.get("x-forwarded-proto", "http")
+    app = tunnel.hostname("app")
+    if app and _host(request) == tunnel.hostname("preview"):
+        # The preview link: sign in (or already signed in) on Gagesite's link, then come back.
+        return RedirectResponse(f"https://{app}/auth/handoff?next={quote(f'https://{host}{uri}', safe='')}", 302)
     login = f"/auth/login?next={quote(f'{scheme}://{host}{uri}', safe='')}"
     if settings.public_port and host:
         # A preview port: the sign-in page lives on Gagesite's own port of this host.
@@ -138,6 +163,56 @@ def login(request: Request, password: str = Form(""), next: str = Form("/")):
     response = RedirectResponse(_safe_next(next, request), status_code=303)
     response.set_cookie(COOKIE, _sign(expires), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/")
     return response
+
+
+def _ticket(preview: str) -> str:
+    return _sign(int(time.time()) + TICKET_SECONDS, f"enter:{preview}")
+
+
+def _enter_url(preview: str, path: str) -> str:
+    return f"https://{preview}/__gagesite/enter?ticket={quote(_ticket(preview))}&next={quote(path, safe='')}"
+
+
+@router.get("/auth/handoff")
+def handoff(request: Request, next: str = "/"):
+    """On Gagesite's link: passes this browser's session to the preview link as a short ticket."""
+    if not _valid(request.cookies.get(COOKIE)):
+        back = "/auth/handoff?next=" + quote(next, safe="")
+        return RedirectResponse("/auth/login?next=" + quote(back, safe=""), 302)
+    preview = tunnel.hostname("preview")
+    parts = urlsplit(next)
+    if not preview or parts.hostname != preview:
+        return RedirectResponse("/", 302)
+    return RedirectResponse(_enter_url(preview, (parts.path or "/") + (f"?{parts.query}" if parts.query else "")), 302)
+
+
+@router.get("/__gagesite/enter")
+def enter(request: Request, ticket: str = "", next: str = "/"):
+    """On the preview link: a valid ticket becomes a session for this link (or one is there already).
+
+    The cookie is partitioned (CHIPS) and SameSite=None: inside Gagesite's preview frame the preview
+    link is a third-party site, where phone browsers drop ordinary cookies but keep partitioned ones.
+    """
+    target = next if next.startswith("/") and not next.startswith("//") and "\\" not in next else "/"
+    response = RedirectResponse(target, status_code=302)
+    if _valid(request.cookies.get(COOKIE)):
+        return response
+    host = _host(request)
+    if not host or not _valid_ticket(ticket, host):
+        return HTMLResponse("This preview link has expired. Open the preview again from Gagesite.", status_code=403)
+    expires = int(time.time()) + SESSION_DAYS * 86400
+    response.headers.append("Set-Cookie", f"{COOKIE}={_sign(expires)}; Max-Age={SESSION_DAYS * 86400}; Path=/; "
+                                          "HttpOnly; Secure; SameSite=None; Partitioned")
+    return response
+
+
+@router.get("/api/access/preview")
+def preview_access(request: Request):
+    """On the tunnel link: where previews are, and a fresh ticket to open one (both null elsewhere)."""
+    app, preview = tunnel.hostname("app"), tunnel.hostname("preview")
+    if not (app and preview and _host(request) == app):
+        return {"origin": None, "ticket": None}
+    return {"origin": f"https://{preview}", "ticket": _ticket(preview)}
 
 
 @router.get("/auth/logout")

@@ -1,19 +1,32 @@
 /** Opened on a public address (not this computer or the SSH tunnel): Caddy serves the API on the
  * same address, and website previews through PREVIEW_PORT (deploy/Caddyfile). */
-const PUBLIC =
+export const PUBLIC =
   typeof window !== "undefined" && !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
 
 export const API_URL = PUBLIC ? "" : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001");
 
-/** A website preview's address in the browser: http://localhost:<port> as it is, or through the
- * preview port when Gagesite is opened on a public address. */
-export function previewAddress(url: string, path = "/"): string {
+/** Opened on the Cloudflare tunnel link: where previews are (their own link) and a one-minute
+ * ticket that signs the preview link in (backend/app/access.py). Both null anywhere else. */
+export interface PreviewAccess {
+  origin: string | null;
+  ticket: string | null;
+}
+
+/** A website preview's address in the browser: http://localhost:<port> as it is, through the
+ * preview port when Gagesite is opened on a public address, or through the preview link (with a
+ * ticket) when it is opened on the tunnel link. */
+export function previewAddress(url: string, path = "/", access?: PreviewAccess | null): string {
   const page = path.startsWith("/") ? path : `/${path}`;
   const local = /^http:\/\/localhost:(\d+)\/?$/.exec(url);
   if (!PUBLIC || !local) return `${url}${page}`;
+  if (access?.origin && access.ticket) {
+    const next = encodeURIComponent(`/__preview/${local[1]}${page}`);
+    return `${access.origin}/__gagesite/enter?ticket=${encodeURIComponent(access.ticket)}&next=${next}`;
+  }
   const port = process.env.NEXT_PUBLIC_PREVIEW_PORT || "9022";
   return `${window.location.protocol}//${window.location.hostname}:${port}/__preview/${local[1]}${page}`;
 }
+
 
 export type StageStatus = "locked" | "active" | "approved";
 
@@ -1637,6 +1650,7 @@ export const api = {
     request<PreviewInfo>(`/api/projects/${id}/build/preview/start`, {
       method: "POST",
     }),
+  previewAccess: () => request<PreviewAccess>("/api/access/preview"),
   stopPreview: (id: string) =>
     request<PreviewInfo>(`/api/projects/${id}/build/preview/stop`, {
       method: "POST",

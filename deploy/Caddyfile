@@ -9,6 +9,11 @@
 {
 	admin off
 	auto_https off
+	servers {
+		# Cloudflare tunnels (compose profile "tunnel") reach Caddy from this server itself: keep the
+		# visitor's address and https from their headers (the sign-in pauses per visitor address).
+		trusted_proxies static 127.0.0.1/32 ::1/128
+	}
 }
 
 (signed_in) {
@@ -36,26 +41,43 @@
 }
 
 :{$PREVIEW_PORT:9022} {
-	import signed_in
-
-	@open path_regexp open ^/__preview/(31[01][0-9])(/.*)$
-	handle @open {
-		header Set-Cookie "gagesite_preview={re.open.1}; Path=/; SameSite=Lax; HttpOnly"
-		redir "{re.open.2}?{query}" 302
-	}
-	@bare path_regexp bare ^/__preview/(31[01][0-9])$
-	handle @bare {
-		redir /__preview/{re.bare.1}/ 302
+	# The tunnel's preview link signs itself in with a ticket from Gagesite (backend/app/access.py).
+	handle /__gagesite/* {
+		reverse_proxy 127.0.0.1:8001
 	}
 
 	handle {
-		map {cookie.gagesite_preview} {preview_upstream} {
-			~^(31[01][0-9])$ "127.0.0.1:${1}"
-			default "127.0.0.1:3100"
+		import signed_in
+
+		# Through the tunnel (https) the preview link sits in Gagesite's frame as a third-party
+		# site: phone browsers keep only partitioned, SameSite=None cookies there.
+		@open_tls {
+			path_regexp open ^/__preview/(31[01][0-9])(/.*)$
+			header X-Forwarded-Proto https
 		}
-		reverse_proxy {preview_upstream} {
-			header_up Host localhost
-			flush_interval -1
+		handle @open_tls {
+			header Set-Cookie "gagesite_preview={re.open.1}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned"
+			redir "{re.open.2}?{query}" 302
+		}
+		@open path_regexp open ^/__preview/(31[01][0-9])(/.*)$
+		handle @open {
+			header Set-Cookie "gagesite_preview={re.open.1}; Path=/; SameSite=Lax; HttpOnly"
+			redir "{re.open.2}?{query}" 302
+		}
+		@bare path_regexp bare ^/__preview/(31[01][0-9])$
+		handle @bare {
+			redir /__preview/{re.bare.1}/ 302
+		}
+
+		handle {
+			map {cookie.gagesite_preview} {preview_upstream} {
+				~^(31[01][0-9])$ "127.0.0.1:${1}"
+				default "127.0.0.1:3100"
+			}
+			reverse_proxy {preview_upstream} {
+				header_up Host localhost
+				flush_interval -1
+			}
 		}
 	}
 }

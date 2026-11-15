@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     # and the public port Gagesite answers on (the sign-in page lives there). See app/access.py.
     gagesite_password: str = ""
     public_port: int = 0
+    # Public links through Cloudflare quick tunnels (compose profile "tunnel"): the local status
+    # ports where each tunnel reports its link. 0 = no tunnel. See app/tunnel.py.
+    tunnel_app_metrics: int = 0
+    tunnel_preview_metrics: int = 0
 
 
 settings = Settings()

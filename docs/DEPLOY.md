@@ -73,6 +73,20 @@ Good to know:
 - One browser shows one website preview at a time. Websites with their own API ("UI + dedicated
   API") show their API only through the SSH tunnel.
 
+### When the ports can't be reached from the internet (Cloudflare links)
+On a university or office network the firewall often blocks the two ports from outside. Then add
+the `tunnel` profile, which needs no Cloudflare account and opens nothing in the firewall:
+```bash
+COMPOSE_PROFILES=public,tunnel
+```
+then `docker compose up -d --build`, and read the two links with
+`docker compose logs tunnel-app tunnel-preview | grep trycloudflare`. Open the `tunnel-app` link
+(https) on any phone or computer and sign in with the same password; previews open on the
+`tunnel-preview` link by themselves. The links are random and change whenever the tunnels restart
+(`docker compose restart tunnel-app tunnel-preview`, a server reboot), so send people the new one.
+Cloudflare's free quick links are meant for testing: for a permanent address, use your own domain
+with a named Cloudflare tunnel, or have the ports opened.
+
 ## Updating
 ```bash
 cd ~/gagesite-app && git pull && docker compose up -d --build

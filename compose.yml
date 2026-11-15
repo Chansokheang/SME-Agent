@@ -26,6 +26,8 @@ services:
     environment:
       BIND_HOST: ${BIND_HOST:-127.0.0.1}
       PUBLIC_PORT: ${PUBLIC_PORT:-9021}
+      TUNNEL_APP_METRICS: ${TUNNEL_APP_METRICS:-29021}
+      TUNNEL_PREVIEW_METRICS: ${TUNNEL_PREVIEW_METRICS:-29022}
       CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
     volumes:
       - ./data:/data                                 # the database, the encryption key, every project
@@ -63,6 +65,29 @@ services:
     depends_on:
       - backend
       - web
+
+  # Public links when the server's ports can't be reached from the internet (a university or office
+  # network): COMPOSE_PROFILES=public,tunnel in .env. Each tunnel gives a free, random
+  # https://<words>.trycloudflare.com link to one of Caddy's ports (no Cloudflare account, nothing
+  # opened in the firewall); the links change whenever the tunnels restart. The backend reads them
+  # from each tunnel's local status port. Show them with: docker compose logs tunnel-app tunnel-preview
+  tunnel-app:
+    image: cloudflare/cloudflared:2025.4.0
+    profiles: ["tunnel"]
+    network_mode: host
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --protocol http2 --metrics 127.0.0.1:${TUNNEL_APP_METRICS:-29021} --url http://127.0.0.1:${PUBLIC_PORT:-9021}
+    depends_on:
+      - public
+
+  tunnel-preview:
+    image: cloudflare/cloudflared:2025.4.0
+    profiles: ["tunnel"]
+    network_mode: host
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --protocol http2 --metrics 127.0.0.1:${TUNNEL_PREVIEW_METRICS:-29022} --url http://127.0.0.1:${PREVIEW_PORT:-9022}
+    depends_on:
+      - public
 
 volumes:
   claude-home:
