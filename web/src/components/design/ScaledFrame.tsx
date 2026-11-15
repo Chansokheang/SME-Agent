@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
 
-const PREVIEW_ORIGIN = new URL(API_URL).origin;
+// On a public address API_URL is "" (same origin as this page): new URL("") would throw on load.
+const PREVIEW_ORIGIN = API_URL
+  ? new URL(API_URL).origin
+  : typeof window !== "undefined"
+    ? window.location.origin
+    : "";
 
 /** One part of the page a comment can be about, e.g. a button, a card or the whole section. */
 export interface PickTarget {
